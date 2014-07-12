@@ -7,7 +7,6 @@ NOVA.loadPDF = function(id, schoolId, week, container) {
     }
 
     var scale = 1.5; //Set this to whatever you want. This is basically the "zoom" factor for the PDF.
-    //PDFJS.workerSrc = '../../build/generic/build/pdf.worker.js';
     
     //Disabled for development
     //var url = "php/phpProxy.php?id=" + id + "&week=" + week + "&school=" + schoolId;  
