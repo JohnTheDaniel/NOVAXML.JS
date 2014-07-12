@@ -43,23 +43,22 @@ setUpSchoolList = function(conArray, parent, insertBefore) {
 
 }
 //Add initial pdf for design and good looks :)
-NOVA.PDF({
+/*NOVA.PDF({
     id: null,
     week: null,
     completeFn: function(error) {},
     errorFn: errorFunction,
     container: document.getElementById("pdfContainer")
-});
+});*/
 
 //Set up a select-option thingy with the above values and content, into the input_form, before periodList. 
-setUpSchoolList(SCHOOLS_N_IDS, document.getElementById("input_form"), document.getElementById("periodList"));
+setUpSchoolList(SCHOOLS_N_IDS, document.getElementById("NOVA-input-form"), document.getElementById("NOVA-period-list"));
 
-document.getElementById("submitBtn").onclick = function() {
-
+document.getElementById("NOVA-submit-btn").onclick = function() {
     //Get info
 
-    var id = document.getElementById("userId").value,
-        period = document.getElementById("periodList").options[document.getElementById("periodList").selectedIndex].value,
+    var id = document.getElementById("NOVA-user-id").value,
+        period = document.getElementById("NOVA-period-list").options[document.getElementById("NOVA-period-list").selectedIndex].value,
         school = document.getElementById(SCHOOLS_SELECT_ID)
             .options[document.getElementById(SCHOOLS_SELECT_ID)
                 .selectedIndex].value,
@@ -80,5 +79,9 @@ document.getElementById("submitBtn").onclick = function() {
     //What does the API need to know? 
     //We need id, school, week interval and a container for where the schedule should be drawn. 
 
-    NOVA.startNova(id, school, startWeek, stopWeek, container);
+    //NOVA.startNova(id, school, startWeek, stopWeek, container);
+}
+
+window.onload = function(){
+    NOVA.loadPDF(0,0,0, document.getElementById("pdfContainer"));  
 }

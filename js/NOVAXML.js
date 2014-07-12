@@ -1,6 +1,6 @@
 var NOVA = NOVA || {};
 
-window.onload = function() {
+NOVA.loadPDF = function(id, schoolId, week, container) {
     if (typeof PDFJS === 'undefined') {
         alert('Built version of pdf.js is not found\nPlease run `node make generic`');
         return;
@@ -8,14 +8,19 @@ window.onload = function() {
 
     var scale = 1.5; //Set this to whatever you want. This is basically the "zoom" factor for the PDF.
     //PDFJS.workerSrc = '../../build/generic/build/pdf.worker.js';
-
-    PDFJS.getDocument("Schedule.pdf").then(function(pdf) {
+    
+    //Disabled for development
+    //var url = "php/phpProxy.php?id=" + id + "&week=" + week + "&school=" + schoolId;  
+    
+    var url = "Schedule.pdf"; 
+    
+    PDFJS.getDocument(url).then(function(pdf) { //Replace this with link to proxy with params.
         pdf.getPage(1).then(function(page) {
 
             var scale = 1.5;
             var viewport = page.getViewport(scale);
 
-            var container = document.getElementById("pdfContainer");
+            //var container = document.getElementById("pdfContainer");
             
             var canvas = document.createElement("canvas");
             var context = canvas.getContext('2d');
@@ -31,8 +36,8 @@ window.onload = function() {
                     viewport: viewport
                 };
                 page.render(renderContext);
-
-
+                
+                
             });
 
 
