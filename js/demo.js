@@ -76,5 +76,30 @@ document.getElementById("NOVA-submit-btn").onclick = function() {
 }
 
 window.onload = function(){
-    NOVA.loadPDF(0,0,0, document.getElementById("pdfContainer"));  
-}
+    //Disabled for development
+    //var url = "php/phpProxy.php?id=" + id + "&week=" + week + "&school=" + schoolId;
+    var url = {schoolId:52550,id:'n1a',week:35};//"Schedule.pdf";
+    
+    NOVA.loadNovaPDF(url,{width:window.innerWidth,height:500,renderMode:'cover'}).then(function(objs){
+        var viewport = objs.viewport,
+            page = objs.page,
+            textContent = objs.renderContext;
+        
+        var container = document.getElementById("pdfContainer");
+
+        var canvas = document.createElement("canvas");
+        var context = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        container.appendChild(canvas);
+        
+        var renderContext = {
+            canvasContext: context,
+            viewport: viewport
+        };
+        
+        page.render(renderContext);
+        
+    }).catch(function(err){console.log(err)});
+};
