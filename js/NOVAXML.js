@@ -1,15 +1,10 @@
 var NOVA = NOVA || {};
 
-<<<<<<< HEAD
-var getPDF = function(loc,scale) {
-=======
-NOVA.loadPDF = function(id, schoolId, week, container) {
->>>>>>> master
+NOVA.loadPDF = function(loc,scale) {
     if (typeof PDFJS === 'undefined') {
         alert('Built version of pdf.js is not found\nPlease run `node make generic`');
         return;
     }
-<<<<<<< HEAD
     var promise = new Promise(function(resolve,reject){
         PDFJS.getDocument(loc).then(function(pdf) {
             pdf.getPage(1).then(function(page) {
@@ -36,50 +31,16 @@ NOVA.loadPDF = function(id, schoolId, week, container) {
                 },function(err){reject(err)});
             },function(err){reject(err)});
         },function(err){reject(err)});
-=======
-
-    var scale = 1.5; //Set this to whatever you want. This is basically the "zoom" factor for the PDF.
-    
-    //Disabled for development
-    //var url = "php/phpProxy.php?id=" + id + "&week=" + week + "&school=" + schoolId;  
-    
-    var url = "Schedule.pdf"; 
-    
-    PDFJS.getDocument(url).then(function(pdf) { //Replace this with link to proxy with params.
-        pdf.getPage(1).then(function(page) {
-
-            var scale = 1.5;
-            var viewport = page.getViewport(scale);
-
-            //var container = document.getElementById("pdfContainer");
-            
-            var canvas = document.createElement("canvas");
-            var context = canvas.getContext('2d');
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-
-            container.appendChild(canvas);
-
-            page.getTextContent().then(function(textContent) {
-                
-                var renderContext = {
-                    canvasContext: context,
-                    viewport: viewport
-                };
-                page.render(renderContext);
-                
-                
-            });
-
-
-        });
->>>>>>> master
     });
     return promise
 };
 
 window.onload = function(){
-    getPDF("Schedule.pdf",{width:window.innerWidth,height:500,renderMode:'cover'}).then(function(objs){
+    //Disabled for development
+    //var url = "php/phpProxy.php?id=" + id + "&week=" + week + "&school=" + schoolId;
+    var url = "Schedule.pdf";
+    
+    NOVA.loadPDF(url,{width:window.innerWidth,height:500,renderMode:'cover'}).then(function(objs){
         var viewport = objs.viewport,
             page = objs.page,
             textContent = objs.renderContext;
