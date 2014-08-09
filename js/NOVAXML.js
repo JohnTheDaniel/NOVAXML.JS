@@ -63,10 +63,13 @@ var NOVA = function(){
         }
     };
     NovaError.prototype.errCodes = {
-        EXAMPLE_ERROR: 1
+        EXAMPLE_ERROR: 1,
+        INFINITE_LESSON: 401
     };
     NovaError.prototype.errMessages = {
-        1: "Det här är ett exempelfel."
+        1: "Det här är ett exempelfel.",
+        
+        401: "Lesson lacks either a start or stop time. Make sure to set Lesson.startTime and Lesson.stopTime."
     };
     
     var Schdule = function(obj){
@@ -117,20 +120,64 @@ var NOVA = function(){
     Week.prototype.appendDay = function(day){this.days.push(day)};
     
     var Day = function(obj){
+        if(obj.weekDay){
+            this.weekDay = obj.weekDay;
+        } else {
+            //Must supply weekday.
+            throw new NovaError({errCode: NovaError.prototype.errCodes.EXAMPLE_ERROR});
+        }
         this.date = obj.date || null,
             this.name = obj.name || null,
             this.lessons = [];
         
     };
-    Day.prototype.toXML = function(ignoreStart){};
+    Day.prototype.toXML = function(ignoreStart){
+        //Sort lessons of the day.
+        this.lessons.sort(function(a,b){
+            var aTimes = a.startTime.split(":");
+            var bTimes = b.startTime.split(":");
+            
+            var aHour = parseInt(aTimes[0]);
+            var aMin = parseInt(aTimes[1]);
+            
+            var bHour = parseInt(bTimes[0]);
+            var bMin = parseInt(bTimes[1]);
+            
+            if(aHour === bHour){
+                return aMin-bMin;
+            } else {
+                return aHour - bHour;
+            }
+        });
+        
+        
+        //Build xml
+        var xml = "";
+        //Begin
+        if(!ignoreStart) xml = xml + BEGIN_XML;
+        //First, top layer tag
+        xml = xml + "<day";
+        if(this.weekDay) xml = xml + " week_day='" + this.weekDay + "'";
+        if(this.date) xml = xml + " date='" + this.date + "'";
+        xml = xml + ">"
+        
+        //Place xml of the lessons in the day
+        
+        //Close stuff up
+        if(!ignoreStart) xml = xml + END_XML;
+        xml = xml + "</day>"
+    };
     Day.prototype.toICS = function(ignoreStart){};
     Day.prototype.toJSON = function(){};
     Day.prototype.appendLesson = function(lesson){this.lessons.push(lesson)};
     Day.prototype.getLessonAtTime = function(){/*Low prority*/};
     
     var Lesson = function(obj){
-        this.startTime = obj.startTime || null,
-        this.stopTime = obj.stopTime || null,
+        //Must supply start and stop time.
+        if(!(obj.startTime || obj.stopTime)) throw new NovaError({errCode: NovaError.prototype.errCodes.INFINITE_LESSON});
+        
+        this.startTime = obj.startTime,
+        this.stopTime = obj.stopTime,
         this.course = obj.course || null,
         this.teacher = obj.teacher || null,
         this.room = obj.room || null;
