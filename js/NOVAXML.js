@@ -46,6 +46,21 @@ var NOVA = function(){
 /****************** Constructors ********************/
 /****************************************************/
     
+    var NovaError = function(obj) {
+        if(typeof obj == "string")
+            this.message = obj;
+        if(obj.errCode){
+            this.message = this.errMessages[obj.errCode];
+            this.errCode = obj.errCode;
+        }
+    };
+    NovaError.prototype.errCodes = {
+        EXAMPLE_ERROR: 1
+    };
+    NovaError.prototype.errMessages = {
+        1: "Det här är ett exempelfel."
+    };
+    
     var Schdule = function(obj){
         this.schoolId = obj.schoolId || null,
             this.id = obj.id || null;
@@ -64,7 +79,21 @@ var NOVA = function(){
         }
         //return new Array()//inherit array
     };
-    WeekBascet.prototype.toXML = function(){};
+    WeekBascet.prototype = new Array();
+    WeekBascet.prototype.toXML = function(){
+        if(this.length == 0) {throw new NovaError({errCode: NovaError.errCodes.EXAMPLE_ERROR})}
+        var xml = "";
+        
+        //init xml
+        xml = xml + "<novaschedule>";
+        
+        //something
+        
+        //Stop
+        xml = xml + "</novaschedule>";
+        
+        return xml;
+    };
     WeekBascet.prototype.toICS = function(){};
     WeekBascet.prototype.toJSON = function(){};
     
