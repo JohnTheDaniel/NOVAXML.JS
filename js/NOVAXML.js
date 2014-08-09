@@ -115,6 +115,9 @@ var NOVA = function(){
     Day.prototype.getLessonAtTime = function(){/*Low prority*/};
     
     var Lesson = function(){};
+    Lesson.prototype.toXML = function(ignoreStart){};
+    Lesson.prototype.toICS = function(ignoreStart){};
+    Lesson.prototype.toJSON = function(){};
     
     return {loadPDF:loadPDF, loadNovaPDF:loadNovaPDF}
 }();
