@@ -4,11 +4,10 @@ var NOVA = function(){
 /******************** Analysis **********************/
 /****************************************************/
     var loadPDF = function(loc,scale) {
-        if (typeof PDFJS === 'undefined') {
-            alert('Built version of pdf.js is not found\nPlease run `node make generic`');
-            return;
-        }
         var promise = new Promise(function(resolve,reject){
+            if (typeof PDFJS === 'undefined') {
+                reject(new Error('Built version of pdf.js is not found\nPlease run `node make generic`'));
+            }
             PDFJS.getDocument(loc).then(function(pdf) {
                 pdf.getPage(1).then(function(page) {
                     var viewport;
