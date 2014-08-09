@@ -37,10 +37,41 @@ var NOVA = function(){
         });
         return promise
     };
-    
     var loadNovaPDF = function(locObj,scale){
         if(locObj.schoolId && locObj.id && locObj.week)
             return loadPDF('php/phpProxy.php?id='+locObj.id+'&week='+locObj.week+'&school='+locObj.schoolId,scale);
+    };
+    
+    var extrctDays = function(textContent){
+        textContent.items.sort(function(a,b){
+            var ret = b.transform[5]-a.transform[5];
+            if(ret==0)ret = a.transform[4]-b.transform[4];
+            return ret
+        });
+        var days = [];
+        for(var i=0;i<5;i++){
+            days.push(textContent.items.splice(0,1)[0]);
+        }
+        return {textContent:textContent.items,days:days}
+    };
+    var sortDays = function(advTxtCont){
+        var days = [];
+        for(var i=0;i<advTxtCont.days.length;i++){
+            advTxtCont.days[i].index=i;
+            days.push({day:advTxtCont.days[i],children:[]});
+        }
+        for(var i=0;i<advTxtCont.textContent.length;i++){
+            var text = advTxtCont.textContent[i];
+            advTxtCont.days.sort(function(a,b){
+                return Math.abs((a.transform[4]+a.width/2)-(text.transform[4]+text.width/2))-
+                    Math.abs((b.transform[4]+b.width/2)-(text.transform[4]+text.width/2));
+            });
+            days[advTxtCont.days[0].index].children.push(text);
+        }
+        return days
+    };
+    var getSortedDays = function(textContent){
+        return sortDays(extrctDays(textContent));
     };
     
 /****************************************************/
@@ -88,6 +119,6 @@ var NOVA = function(){
     
     var Lesson = function(){};
     
-    return {loadPDF:loadPDF, loadNovaPDF:loadNovaPDF}
+    return {getSortedDays:getSortedDays, loadNovaPDF:loadNovaPDF}
 }();
 
