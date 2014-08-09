@@ -24,9 +24,9 @@ if ($_GET['week'])
 	}
 if ($_GET['school'])
 	{
-	$week = $_GET['school'];
+	$school = $_GET['school'];
 	}
 
-$file="http://www.novasoftware.se/ImgGen/schedulegenerator.aspx?format=pdf&schoolid=52550/sv-se&id=".$id."&period=".$period."&week=".$week."&mode=0&head=1&day=0&width=1&height=1";
+$file="http://www.novasoftware.se/ImgGen/schedulegenerator.aspx?format=pdf&schoolid=".$school."/sv-se&id=".$id."&period=".$period."&week=".$week."&mode=0&head=1&day=0&width=1&height=1";
 readfile($file);
 ?>
