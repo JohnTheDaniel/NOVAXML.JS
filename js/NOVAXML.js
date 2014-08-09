@@ -114,7 +114,13 @@ var NOVA = function(){
     Day.prototype.toJSON = function(){};
     Day.prototype.getLessonAtTime = function(){/*Low prority*/};
     
-    var Lesson = function(){};
+    var Lesson = function(obj){
+        this.startTime = obj.startTime || null,
+        this.stopTime = obj.stopTime || null,
+        this.course = obj.cource || null,
+        this.teacher = obj.teacher || null,
+        this.room = obj.room || null;
+    };
     Lesson.prototype.toXML = function(ignoreStart){};
     Lesson.prototype.toICS = function(ignoreStart){};
     Lesson.prototype.toJSON = function(){};
