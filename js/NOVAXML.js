@@ -63,13 +63,14 @@ var NOVA = function(){
     
     var Schdule = function(obj){
         this.schoolId = obj.schoolId || null,
-            this.id = obj.id || null;
+            this.id = obj.id || null,
+            this.weeks = [];
         
         if(obj.JSON)/*Convert JSON to new object*/;
     };
     Schdule.prototype.getWeeks = function(){/*Konstruera weekBasket och return*/};
     Schdule.prototype.loadWeeks = function(){/*Loop this.loadWeek()*/};
-    Schdule.prototype.loadWeek = function(){/*Call hidden functions for analysis and appendWeek()*/};
+    Schdule.prototype.loadWeek = function(){/*Call hidden functions for analysis and appendWeek(), return promise*/};
     Schdule.prototype.appendWeek = function(){/*Add week to week array*/};
     
     var WeekBascet = function(obj){/*Construct array of selected weeks*/
@@ -99,19 +100,24 @@ var NOVA = function(){
     
     var Week = function(obj){
         this.nr = obj.nr || null;
+        this.days = [];
     };
     Week.prototype.toXML = function(ignoreStart){};
     Week.prototype.toICS = function(ignoreStart){};
     Week.prototype.toJSON = function(){};
     Week.prototype.getDay = function(){};
+    Week.prototype.appendDay = function(day){this.days.push(day)};
     
     var Day = function(obj){
         this.date = obj.date || null,
-            this.name = obj.name || null;
+            this.name = obj.name || null,
+            this.lessons = [];
+        
     };
     Day.prototype.toXML = function(ignoreStart){};
     Day.prototype.toICS = function(ignoreStart){};
     Day.prototype.toJSON = function(){};
+    Day.prototype.appendLesson = function(lesson){this.lessons.push(lesson)};
     Day.prototype.getLessonAtTime = function(){/*Low prority*/};
     
     var Lesson = function(obj){
