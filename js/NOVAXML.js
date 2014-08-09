@@ -1,8 +1,16 @@
 /*TODO: get by date*/
 var NOVA = function(){
 /****************************************************/
+/******************* Constants **********************/
+/****************************************************/
+    
+    var BEGIN_XML = "<novaschedule>";
+    var END_XML = "</novaschedule>";
+    
+/****************************************************/
 /******************** Analysis **********************/
 /****************************************************/
+    
     var loadPDF = function(loc,scale) {
         var promise = new Promise(function(resolve,reject){
             if (typeof PDFJS === 'undefined') {
@@ -86,12 +94,12 @@ var NOVA = function(){
         var xml = "";
         
         //init xml
-        xml = xml + "<novaschedule>";
+        xml = xml + BEGIN_XML;
         
         //something
         
         //Stop
-        xml = xml + "</novaschedule>";
+        xml = xml + END_XML;
         
         return xml;
     };
@@ -123,11 +131,57 @@ var NOVA = function(){
     var Lesson = function(obj){
         this.startTime = obj.startTime || null,
         this.stopTime = obj.stopTime || null,
-        this.course = obj.cource || null,
+        this.course = obj.course || null,
         this.teacher = obj.teacher || null,
         this.room = obj.room || null;
     };
-    Lesson.prototype.toXML = function(ignoreStart){};
+    Lesson.prototype.toXML = function(ignoreStart){
+        var xml = "";
+        //Begin
+        if(!ignoreStart) xml = xml + BEGIN_XML;
+        xml = xml + "<lesson>";
+        
+        //Everything in the middle
+        
+        //Start time
+        if(this.startTime === null) {
+            throw new NovaError({errCode: NovaError.errCodes.EXAMPLE_ERROR})
+        } else {
+            xml = xml + "<start>" + this.startTime + "</start>";   
+        }
+        
+        //Stop time
+        if(this.stopTime === null) {
+            throw new NovaError({errCode: NovaError.errCodes.EXAMPLE_ERROR})
+        } else {
+            xml = xml + "<stop>" + this.stopTime + "</stop>";   
+        }
+        
+        //Course
+        //TODO: do not render incorrectly if course does not exist. Schedule should be able to render without course.
+        //However, a whole day cannot be rendered if a start time does not exist, that is the difference.
+        if(this.course === null){
+            throw new NovaError({errCode: NovaError.prototype.errCodes.EXAMPLE_ERROR})
+        } else {
+            xml = xml + "<course>" + this.course + "</course>";   
+        }
+        
+        //Teacher
+        xml = xml + "<teacher>";
+        if(this.teacher != null) xml = xml + this.teacher;
+        xml = xml + "</teacher>"
+        
+        //Room
+        xml = xml + "<room>";
+        if(this.room != null) xml = xml + this.room;
+        xml = xml + "</room>"
+        
+        //End
+        xml = xml + "</lesson>";
+        if(!ignoreStart) xml = xml + END_XML;
+        
+        return xml;
+    };
     Lesson.prototype.toICS = function(ignoreStart){};
     Lesson.prototype.toJSON = function(){};
     
