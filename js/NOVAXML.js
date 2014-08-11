@@ -110,10 +110,46 @@ var NOVA = function(){
     WeekBascet.prototype.toJSON = function(){};
     
     var Week = function(obj){
-        this.nr = obj.nr || null;
+        //Must supply week number
+        if(typeof obj.weekNumber === 'undefined') {throw new NovaError({errCode: NovaError.prototype.errCodes.EXAMPLE_ERROR})}
+        else {this.weekNumber = parseInt(obj.weekNumber)}
         this.days = [];
     };
-    Week.prototype.toXML = function(ignoreStart){};
+    Week.prototype.toXML = function(ignoreStart){
+                
+        //Sort days, just in case 
+        this.days.sort(function(a,b){
+            var aWeekDay;
+            if(typeof a.weekDay === 'string') {aWeekDay = parseInt(a.weekDay)}
+            else {aWeekDay = a.weekDay}
+            
+            var bWeekDay;
+            if(typeof b.weekDay === 'string') {bWeekDay = parseInt(b.weekDay)}
+            else {bWeekDay = b.weekDay}
+            
+            return aWeekDay - bWeekDay;
+        });
+        
+        //Build xml
+        var xml = "";
+        if(!ignoreStart) xml = xml + BEGIN_XML;
+        
+        //header tag
+        xml = xml + "<week number='" + this.weekNumber + "'>"
+        
+        //Place in all of the days
+        var xmlFromDays = "";
+        for(var i = 0; i < this.days.length; i++){
+            xmlFromDays = xmlFromDays + this.days[i].toXML(true);
+        }
+        xml = xml + xmlFromDays;
+        
+        //Close it all up
+        xml = xml + "</week>"
+        if(!ignoreStart) xml = xml + END_XML;
+        return xml;
+        
+    };
     Week.prototype.toICS = function(ignoreStart){};
     Week.prototype.toJSON = function(){};
     Week.prototype.getDay = function(){};
@@ -158,7 +194,7 @@ var NOVA = function(){
         
         //First, top layer tag
         xml = xml + "<day";
-        if(this.weekDay) xml = xml + " week_day='" + this.weekDay + "'";
+        xml = xml + " week_day='" + this.weekDay + "'";
         if(this.date) xml = xml + " date='" + this.date + "'";
         xml = xml + ">"
         
@@ -240,6 +276,7 @@ var NOVA = function(){
     Lesson.prototype.toICS = function(ignoreStart){};
     Lesson.prototype.toJSON = function(){};
     
-    return {Lesson:Lesson, Day:Day, loadPDF:loadPDF, loadNovaPDF:loadNovaPDF}
+    //Week, Lesson and Day are for toXML() testing purposes
+    return {Week: Week, Lesson:Lesson, Day:Day, loadPDF:loadPDF, loadNovaPDF:loadNovaPDF}
 }();
 
