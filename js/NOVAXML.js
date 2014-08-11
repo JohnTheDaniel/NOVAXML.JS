@@ -64,10 +64,18 @@ var NOVA = function(){
     };
     NovaError.prototype.errCodes = {
         EXAMPLE_ERROR: 1,
+        
+        WRONG_PARAMS_WEEKBASCET: 101,       
+        WEEKBASCET_EMPTY: 102,
+        
         INFINITE_LESSON: 401
     };
     NovaError.prototype.errMessages = {
         1: "Det här är ett exempelfel.",
+        
+        101: "Wrong params for WeekBascet. Must supply either {start: [integer], end: [integer]} or an array with integers with the desired week numbers, for example [3,5,7] wich returns week 3, week 5 and week 7",
+        
+        102: "WeekBascet is empty. Call NOVA.Schedule.getWeeks(params) to get a filled WeekBascet.",
         
         401: "Lesson lacks either a start or stop time. Make sure to set Lesson.startTime and Lesson.stopTime."
     };
@@ -79,27 +87,60 @@ var NOVA = function(){
         
         if(obj.JSON)/*Convert JSON to new object*/;
     };
-    Schdule.prototype.getWeeks = function(){/*Konstruera weekBasket och return*/};
+    Schdule.prototype.getWeeks = function(obj){
+        /*Konstruera weekBasket och return*/
+        var type = Object.prototype.toString.call(obj);
+        var weekBascet = new WeekBascet();
+        if(type=='[object Array]'){
+            //Find the weeks in schedule.weeks that has the same week numbers as the typed values in the array.
+            for(var i = 0; i < obj.length; i++){
+                if (parseInt(obj[i]) === "NaN") {
+                    throw new NovaError({errCode: NovaError.prototype.errCodes.WRONG_PARAMS_WEEKBASCET})
+                };
+                
+                
+                for(var a = 0; a < this.weeks.length; a++){
+                    if((parseInt(obj[i])) === (parseInt(this.weeks[a].weekNumber))){
+                        weekBascet.push(this.weeks[a]);
+                    }
+                }
+            }
+        } else if(obj.start && obj.stop){
+            if((isNaN(obj.start)) || isNaN(obj.stop)) throw new NovaError({errCode: NovaError.prototype.errCodes.WRONG_PARAMS_WEEKBASCET});
+            
+            for(var i = obj.start; i <= obj.stop; i++){
+                for(var a = 0; a < this.weeks.length; a++){
+                    if(i === (parseInt(this.weeks[a].weekNumber))){
+                        weekBascet.push(this.weeks[a]);
+                    }
+                }
+            }
+        }
+        return weekBascet;
+    };
     Schdule.prototype.loadWeeks = function(){/*Loop this.loadWeek()*/};
     Schdule.prototype.loadWeek = function(){/*Call hidden functions for analysis and appendWeek(), return promise*/};
-    Schdule.prototype.appendWeek = function(){/*Add week to week array*/};
+    Schdule.prototype.appendWeek = function(week){this.weeks.push(week)};
     
-    var WeekBascet = function(obj){/*Construct array of selected weeks*/
-        var type = Object.prototype.toString.call(obj);
-        if(type=='[object Array]'){
-        }else if(obj.start && obj.end){
-        }
-        //return new Array()//inherit array
-    };
+    var WeekBascet = function(){/*Hold array of selected weeks from Schedule.getWeeks()*/};
     WeekBascet.prototype = new Array();
-    WeekBascet.prototype.toXML = function(){
-        if(this.length == 0) {throw new NovaError({errCode: NovaError.errCodes.EXAMPLE_ERROR})}
+    WeekBascet.prototype.toXML = function(){     
+        if(this.length === 0) {throw new NovaError({errCode: NovaError.errCodes.WEEKBASCET_EMPTY})}
         var xml = "";
+        
+        this.sort(function(a,b){
+            return parseInt(a.weekNumber) - parseInt(b.weekNumber)      
+        });
         
         //init xml
         xml = xml + BEGIN_XML;
         
-        //something
+        //Get xml from weeks.
+        var xmlFromWeeks = "";
+        for(var i = 0; i < this.length; i++){
+            xmlFromWeeks = xmlFromWeeks + this[i].toXML(true);
+        }
+        xml = xml + xmlFromWeeks;
         
         //Stop
         xml = xml + END_XML;
@@ -277,6 +318,6 @@ var NOVA = function(){
     Lesson.prototype.toJSON = function(){};
     
     //Week, Lesson and Day are for toXML() testing purposes
-    return {Week: Week, Lesson:Lesson, Day:Day, loadPDF:loadPDF, loadNovaPDF:loadNovaPDF}
+    return {loadPDF:loadPDF, loadNovaPDF:loadNovaPDF}
 }();
 
