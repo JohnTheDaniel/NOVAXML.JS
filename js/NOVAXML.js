@@ -121,10 +121,10 @@ var NOVA = function(){
     
     var Day = function(obj){
         if(obj.weekDay == null){
-            this.weekDay = obj.weekDay;
-        } else {
             //Must supply weekday.
-            throw new NovaError({errCode: NovaError.prototype.errCodes.EXAMPLE_ERROR});
+            throw new NovaError({errCode: NovaError.prototype.errCodes.EXAMPLE_ERROR});          
+        } else {
+            this.weekDay = obj.weekDay;
         }
         this.date = obj.date || null,
             this.name = obj.name || null,
