@@ -109,16 +109,32 @@ var NOVA = function(){
     Week.prototype.getDay = function(){};
     
     var Day = function(obj){
+        if(!obj)obj = {};//prevent errors at undefined obj
         this.date = obj.date || null,
-            this.name = obj.name || null;
+            this.name = obj.name || null,
+            this.lessons = [];
+    };
+    Day.prototype.appendLesson = function(lesson){
+        if(!lesson)throw 'missing parameter';
+        lesson.parent = this;
+        this.lessons.push(lesson);
     };
     Day.prototype.toXML = function(ignoreStart){};
     Day.prototype.toICS = function(ignoreStart){};
     Day.prototype.toJSON = function(){};
     Day.prototype.getLessonAtTime = function(){/*Low prority*/};
     
-    var Lesson = function(){};
+    var Lesson = function(obj){
+        if(!obj)obj = {};//prevent errors at undefined obj
+        this.startTime = obj.startTime || null,
+            this.stopTime = obj.stopTime || null,
+            this.course = obj.course || null,
+            this.teacher = obj.teacher || null,
+            this.room = obj.room || null,
+            this.parent = obj.parent || null;
+    };
     
-    return {getSortedDays:getSortedDays, loadNovaPDF:loadNovaPDF}
+    
+    return {getSortedDays:getSortedDays, loadPDF:loadPDF, getNovaUrl:getNovaUrl, processDay:processDay}
 }();
 
