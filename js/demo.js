@@ -76,30 +76,37 @@ document.getElementById("NOVA-submit-btn").onclick = function() {
 }
 
 window.onload = function(){
-    //Disabled for development
-    //var url = "php/phpProxy.php?id=" + id + "&week=" + week + "&school=" + schoolId;
-    var url = {schoolId:52550,id:'n1a',week:35};//"Schedule.pdf";
-    
-    NOVA.loadNovaPDF(url,{width:window.innerWidth,height:500,renderMode:'cover'}).then(function(objs){
-        var viewport = objs.viewport,
-            page = objs.page,
-            textContent = objs.renderContext;
-        
-        var container = document.getElementById("pdfContainer");
+    document.getElementById('NOVA-submit-btn').onclick = function(){
+        //Disabled for development
+        //var url = "php/phpProxy.php?id=" + id + "&week=" + week + "&school=" + schoolId;
+        var url = NOVA.getNovaUrl({schoolId:52550,id:document.getElementById('NOVA-user-id').value,week:36});//"Schedule.pdf";
 
-        var canvas = document.createElement("canvas");
-        var context = canvas.getContext('2d');
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
+        NOVA.loadPDF(url,{width:window.innerWidth,height:500,renderMode:'contain'}).then(function(objs){
+            var viewport = objs.viewport,
+                page = objs.page,
+                textContent = objs.textContent;
 
-        container.appendChild(canvas);
-        
-        var renderContext = {
-            canvasContext: context,
-            viewport: viewport
-        };
-        
-        page.render(renderContext);
-        
-    }).catch(function(err){console.log(err)});
+            var container = document.getElementById("pdfContainer");
+
+            var canvas = document.createElement("canvas");
+            var context = canvas.getContext('2d');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+
+            container.appendChild(canvas);
+
+            var renderContext = {
+                canvasContext: context,
+                viewport: viewport
+            };
+
+            page.render(renderContext);
+            
+            window.h = NOVA.getSortedDays(textContent);
+            console.log(h);
+
+        }).catch(function(err){console.log(err)});
+
+        return false
+    };
 };
