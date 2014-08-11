@@ -120,7 +120,7 @@ var NOVA = function(){
     Week.prototype.appendDay = function(day){this.days.push(day)};
     
     var Day = function(obj){
-        if(obj.weekDay){
+        if(obj.weekDay == null){
             this.weekDay = obj.weekDay;
         } else {
             //Must supply weekday.
@@ -132,6 +132,7 @@ var NOVA = function(){
         
     };
     Day.prototype.toXML = function(ignoreStart){
+        
         //Sort lessons of the day.
         this.lessons.sort(function(a,b){
             var aTimes = a.startTime.split(":");
@@ -149,12 +150,12 @@ var NOVA = function(){
                 return aHour - bHour;
             }
         });
-        
-        
+              
         //Build xml
         var xml = "";
         //Begin
         if(!ignoreStart) xml = xml + BEGIN_XML;
+        
         //First, top layer tag
         xml = xml + "<day";
         if(this.weekDay) xml = xml + " week_day='" + this.weekDay + "'";
@@ -162,10 +163,17 @@ var NOVA = function(){
         xml = xml + ">"
         
         //Place xml of the lessons in the day
+        var xmlFromLessons = "";
+        for(var i = 0; i < this.lessons.length; i++){
+            xmlFromLessons = xmlFromLessons + this.lessons[i].toXML(true);           
+        }
+        xml = xml + xmlFromLessons;
         
         //Close stuff up
         if(!ignoreStart) xml = xml + END_XML;
         xml = xml + "</day>"
+        
+        return xml;
     };
     Day.prototype.toICS = function(ignoreStart){};
     Day.prototype.toJSON = function(){};
@@ -232,6 +240,6 @@ var NOVA = function(){
     Lesson.prototype.toICS = function(ignoreStart){};
     Lesson.prototype.toJSON = function(){};
     
-    return {loadPDF:loadPDF, loadNovaPDF:loadNovaPDF}
+    return {Lesson:Lesson, Day:Day, loadPDF:loadPDF, loadNovaPDF:loadNovaPDF}
 }();
 
