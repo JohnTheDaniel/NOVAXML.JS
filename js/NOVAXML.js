@@ -297,7 +297,6 @@ var NOVA = function(){
     Week.prototype.appendDay = function(day){this.days.push(day)};
     
     var Day = function(obj){
-<<<<<<< HEAD
         if(obj.weekDay == null){
             //Must supply weekday.
             throw new NovaError({errCode: NovaError.prototype.errCodes.EXAMPLE_ERROR});          
