@@ -1,14 +1,20 @@
 /*TODO: get by date*/
 var NOVA = function(){
     
-    PROGRESS_STEPS = {getPdf:['Document Recived',
-                              'Page Loaded',
-                              'Done Loading'
+    var PROGRESS_STEPS = {getPdf:['Document Recived',
+                                  'Page Loaded',
+                                  'Done Loading'
                              ],
-                      analyse:['Data Processed',
-                               'Week created'
-                              ]
-                     };
+                          analyse:['Data Processed',
+                                   'Week created'
+                                  ],
+                          combined:['Initiating Week',
+                                    'Week Aplied'
+                                   ]
+                         };
+    var FIRST_WEEK = 1,
+        LAST_WEEK = 52,
+        DENIED_WEEKS = [25,26,27,28,29,30,31,32,33];
 /****************************************************/
 /******************** Analysis **********************/
 /****************************************************/
@@ -56,6 +62,7 @@ var NOVA = function(){
     var getNovaUrl = function(locObj){
         if(locObj.schoolId && locObj.id && locObj.week)
             return 'php/phpProxy.php?id='+locObj.id+'&week='+locObj.week+'&school='+locObj.schoolId;
+        else throw new NovaError({errCode:NovaError.prototype.errCodes.MISSING_PARAMETER,msg:'can\'t build URL'});
     };
     
     var extractDays = function(textContent){
@@ -205,13 +212,17 @@ var NOVA = function(){
         UNEXPECTED_ERROR: 1,
         MISSING_PARAMETER: 2,
         WRONG_TYPE: 3,
-        UNEXPECTED_STRUCTURE: 4
+        UNEXPECTED_STRUCTURE: 4,
+        DENIED_PARAMETER: 5,
+        INVALID_DATA: 6
     };
     NovaError.prototype.errMessages = {
         1: 'Unexpected error',
         2: 'Missing parameter',
         3: 'Wrong type',
-        3: 'Unexpected structure'
+        4: 'Unexpected structure',
+        5: 'Denied parameter',
+        6: 'Invalid data'
     };
     NovaError.prototype.toString = function(){return '[object NovaError]'};
     
@@ -223,8 +234,106 @@ var NOVA = function(){
         
         if(obj.JSON)/*Convert JSON to new object*/;
     };
+    var weekDataToArray = function(data){
+        if(!data)throw new NovaError({errCode:NovaError.prototype.errCodes.MISSING_PARAMETER,msg:'Week-data not defined'});
+        
+        if(toString.call(data)==='[object Array]'){
+            var ret = [];
+            for(var i=0;i<data.length;i++){
+                var c = parseInt(data[i]);
+                if(!isNaN(c)){
+                    if(DENIED_WEEKS.indexOf(c)===-1)
+                        ret.push(c);
+                    else
+                        console.warn('Skipping week '+c+'; Week Denied');
+                }else{
+                    console.warn('Not number:'+c+'.\nSkipping value');
+                }
+            }
+            return ret
+        }else if(!isNaN(parseInt(data))){
+            if(DENIED_WEEKS.indexOf(parseInt(data))!==-1)
+                throw new NovaError({errCode:NovaError.prototype.errCodes.DENIED_PARAMETER,msg:'Week '+parseInt(data)+' is not allowed'});
+            return [parseInt(data)];
+        }else{
+            var start = data.start || data.first,
+                stop = data.stop || data.last || data.end;
+            var s = parseInt(start),
+                e = parseInt(stop);
+            if(!(isNaN(s) || isNaN(e)) && s<e && s>=FIRST_WEEK && e<=LAST_WEEK){
+                var ret = [];
+                for(;s<=e;s++){
+                    if(DENIED_WEEKS.indexOf(s)===-1)
+                        ret.push(s);
+                    else
+                        console.warn('Skipping week '+s+'; Week Denied');
+                }
+                return ret
+            }else{
+                throw new NovaError({errCode:NovaError.prototype.errCodes.DENIED_PARAMETER,
+                                     msg:'First or last week is not allowed or wrong',
+                                     data:{first:start,last:stop}});
+            }
+        }
+    };
     Schdule.prototype.getWeeks = function(){/*Konstruera weekBasket och return*/};
-    Schdule.prototype.loadWeeks = function(){/*Loop this.loadWeek()*/};
+    Schdule.prototype.loadWeeks = function(obj){
+        var id = obj.id,
+            schoolId = obj.schoolId,
+            scale = obj.scale,
+            urlArr = obj.url || null,
+            pdfDataArr = obj.pdf || obj.pdfData,
+            progressFn = obj.progressFn || null,
+            weeks;
+        
+        if(toString.call(pdfDataArr)==='[object Array]')
+            weeks = pdfDataArr,
+                pdfDataArr = true;
+        else pdfDataArr = false;
+        if(toString.call(urlArr)==='[object Array]')
+            weeks = urlArr,
+                urlArr = true;
+        else urlArr = false;
+        
+        if(!(pdfDataArr || urlArr))
+            weeks = weekDataToArray(obj.weeks || obj.week);
+        
+        //to reach this in async functions
+        var t = this;
+        
+        var promise = new Promise(function(resolve,reject){
+            var completed = weeks.length,
+                failed = [];
+            for(var i=0;i<weeks.length;i++){
+                var curr = weeks[i];
+
+                if(pdfDataArr)
+                    t.loadWeek({nr:i,pdf:curr,scale:scale,progressFn:progressFn});
+                else if(urlArr)
+                    t.loadWeek({nr:i,pdf:curr,scale:scale,progressFn:progressFn});
+                else{
+                    progressFn({weekNr:curr,stepType:'combined',step:0,string:PROGRESS_STEPS.combined[0]});
+
+                    var load = t.loadWeek({nr:curr,id:id,schoolId:schoolId,scale:scale,progressFn:progressFn});
+                    load.then(function(e){
+                        progressFn({weekNr:e,stepType:'combined',step:1,string:PROGRESS_STEPS.combined[1],data:e,succeded:true});
+                        if(--completed<1){
+                            if(failed.length>0) reject(failed);
+                            else resolve(t);
+                        }
+                    },function(err){
+                        progressFn({weekNr:curr,stepType:'combined',step:1,string:PROGRESS_STEPS.combined[1],data:err,succeded:false});
+                        failed.push(err);
+                        if(--completed<1){
+                            if(failed.length>0) reject(failed);
+                            else resolve(t);
+                        }
+                    });
+                }
+            }
+        });
+        return promise
+    };
     Schdule.prototype.loadWeek = function(obj,progressFn){
         var nr = parseInt(obj),
             id = this.id,
@@ -243,8 +352,12 @@ var NOVA = function(){
                                                       msg:'id and schoolId must be specified either in the Schedule object or  as a parameter'});
             
             scale = obj.scale || null;
-            if(obj.progressFn)progressFn == obj.progressFn;
+            if(obj.progressFn)progress = obj.progressFn;
         }
+        //Control data TODO: enable after merge
+        /*if(SCHOOLS.indexOf(schoolId)===-1)
+           throw new NovaError({errCode:NovaError.prototype.errCodes.INVALID_DATA,msg:'used schoolId that is not indexed',data:schoolId});*/
+        
         if(obj.pdf || obj.url)url = obj.pdf || obj.url;
         else url = getNovaUrl({schoolId:schoolId,id:id,week:nr});
         
@@ -263,7 +376,7 @@ var NOVA = function(){
                     resolve({weekNr:nr,week:week,viewport:objs.viewport,page:objs.page,textContent:objs.textContent})
                 }catch(err){
                     /*Analyzing error and resolve it here*/
-                    reject(err)
+                    reject({error:err,weekNr:nr})
                 }
             },function(err){reject(err)});
         });
@@ -350,7 +463,7 @@ var NOVA = function(){
     };
     
     
-    return {getSortedDays:getSortedDays, loadPDF:loadPDF, getNovaUrl:getNovaUrl, Schdule:Schdule}
+    return {Schdule:Schdule}
 }();
 
 window.onload = function(){
