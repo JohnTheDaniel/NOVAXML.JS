@@ -1,15 +1,27 @@
 /*TODO: get by date*/
 var NOVA = function(){
+    
+    PROGRESS_STEPS = {getPdf:['Document Recived',
+                              'Page Loaded',
+                              'Done Loading'
+                             ],
+                      analyse:['Data Processed',
+                               'Week created'
+                              ]
+                     };
 /****************************************************/
 /******************** Analysis **********************/
 /****************************************************/
-    var loadPDF = function(loc,scale) {
+    var loadPDF = function(loc,scale,progressFn) {
         var promise = new Promise(function(resolve,reject){
             if (typeof PDFJS === 'undefined') {
                 reject(new Error('Built version of pdf.js is not found\nPlease run `node make generic`'));
             }
+            
             PDFJS.getDocument(loc).then(function(pdf) {
+                progressFn({step:0,string:PROGRESS_STEPS.getPdf[0]});
                 pdf.getPage(1).then(function(page) {
+                    progressFn({step:1,string:PROGRESS_STEPS.getPdf[1]});
                     var viewport;
                     /*scale handeler*/
                     if(!scale || !isNaN(parseFloat(scale))){
@@ -29,6 +41,7 @@ var NOVA = function(){
                         }
                     }
                     page.getTextContent().then(function(textContent) {
+                        progressFn({step:2,string:PROGRESS_STEPS.getPdf[2]});
                         resolve({page:page,viewport:viewport,textContent:textContent});
                     },function(err){reject(err)});
                 },function(err){reject(err)});
@@ -38,7 +51,7 @@ var NOVA = function(){
     };
     var loadNovaPDF = function(locObj,scale){
         if(locObj.schoolId && locObj.id && locObj.week)
-            return loadPDF('php/phpProxy.php?id='+locObj.id+'&week='+locObj.week+'&school='+locObj.schoolId,scale);
+            return loadPDF(getNovaUrl(locObj),scale);
     };
     var getNovaUrl = function(locObj){
         if(locObj.schoolId && locObj.id && locObj.week)
@@ -205,14 +218,63 @@ var NOVA = function(){
     var Schdule = function(obj){
         if(!obj)obj = {};//prevent errors at undefined obj
         this.schoolId = obj.schoolId || null,
-            this.id = obj.id || null;
+            this.id = obj.id || null
+            this.weeks = [];
         
         if(obj.JSON)/*Convert JSON to new object*/;
     };
     Schdule.prototype.getWeeks = function(){/*Konstruera weekBasket och return*/};
     Schdule.prototype.loadWeeks = function(){/*Loop this.loadWeek()*/};
-    Schdule.prototype.loadWeek = function(){/*Call hidden functions for analysis and appendWeek()*/};
-    Schdule.prototype.appendWeek = function(){/*Add week to week array*/};
+    Schdule.prototype.loadWeek = function(obj,progressFn){
+        var nr = parseInt(obj),
+            id = this.id,
+            schoolId = this.schoolId,
+            progress = progressFn || null,
+            scale,
+            url;
+        
+        if(isNaN(nr)){
+            nr=obj.nr
+            if(!nr)throw new NovaError({errCode:NovaError.prototype.errCodes.MISSING_PARAMETER,msg:'Week nr not specified'});
+            
+            if(obj.schoolId)schoolId = obj.schoolId;
+            if(obj.id)id = obj.id;
+            if(!(schoolId && id))throw new NovaError({errCode:NovaError.prototype.errCodes.MISSING_PARAMETER,
+                                                      msg:'id and schoolId must be specified either in the Schedule object or  as a parameter'});
+            
+            scale = obj.scale || null;
+            if(obj.progressFn)progressFn == obj.progressFn;
+        }
+        if(obj.pdf || obj.url)url = obj.pdf || obj.url;
+        else url = getNovaUrl({schoolId:schoolId,id:id,week:nr});
+        
+        //to reach this in async functions
+        var t = this;
+        var promise = new Promise(function(resolve, reject){
+            loadPDF(url,scale,function(e){if(progress)progress({weekNr:nr,stepType:'getPdf',step:e.step,string:e.string});}).then(function(objs){
+                var week;
+                try{
+                    var sort = getSortedDays(objs.textContent);
+                    if(progress)progress({weekNr:nr,stepType:'analyse',step:0,string:PROGRESS_STEPS.analyse[0]});
+                    week = processWeek(sort);
+                    week.nr = nr;
+                    if(progress)progress({weekNr:nr,stepType:'analyse',step:1,string:PROGRESS_STEPS.analyse[1]});
+                    t.appendWeek(week);
+                    resolve({weekNr:nr,week:week,viewport:objs.viewport,page:objs.page,textContent:objs.textContent})
+                }catch(err){
+                    /*Analyzing error and resolve it here*/
+                    reject(err)
+                }
+            },function(err){reject(err)});
+        });
+        return promise
+    };
+    Schdule.prototype.appendWeek = function(week){
+        if(!week)throw new NovaError({errCode:NovaError.prototype.errCodes.MISSING_PARAMETER,msg:'week is not defined'});
+        //control Week constructor. Must be Week!
+        week.parent = this;
+        this.weeks.push(week);
+    };
     
     var WeekBascet = function(obj){/*Construct array of selected weeks*/
         var type = Object.prototype.toString.call(obj);
@@ -242,6 +304,7 @@ var NOVA = function(){
     var Week = function(obj){
         if(!obj)obj = {};//prevent errors at undefined obj
         this.nr = obj.nr || null,
+            this.parent = obj.parent || null,
             this.days = [];
     };
     Week.prototype.appendDay = function(day, id){
@@ -287,7 +350,7 @@ var NOVA = function(){
     };
     
     
-    return {getSortedDays:getSortedDays, loadPDF:loadPDF, getNovaUrl:getNovaUrl, processWeek:processWeek}
+    return {getSortedDays:getSortedDays, loadPDF:loadPDF, getNovaUrl:getNovaUrl, Schdule:Schdule}
 }();
 
 window.onload = function(){
