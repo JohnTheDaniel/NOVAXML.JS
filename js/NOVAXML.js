@@ -1,15 +1,12 @@
 /*TODO: get by date*/
 var NOVA = function(){
     
-<<<<<<< HEAD
     //Every school has a different value. For example, Blackebergs Gymnasium has the id 52550
-    var SCHOOLS = {
-        "Blackebergs Gymnasium": 52550,
-        "Kungsholmens Gymnasium": 29200,
-        "Norra Real": 81530,
-        "Östra Real": 59150
-    };
-=======
+    var SCHOOLS = {"Blackebergs Gymnasium": 52550,
+                   "Kungsholmens Gymnasium": 29200,
+                   "Norra Real": 81530,
+                   "Östra Real": 59150
+                  };
     var PROGRESS_STEPS = {getPdf:['Document Recived',
                                   'Page Loaded',
                                   'Done Loading'
@@ -24,7 +21,7 @@ var NOVA = function(){
     var FIRST_WEEK = 1,
         LAST_WEEK = 52,
         DENIED_WEEKS = [25,26,27,28,29,30,31,32,33];
->>>>>>> analysis
+
 /****************************************************/
 /******************** Analysis **********************/
 /****************************************************/
@@ -471,48 +468,5 @@ var NOVA = function(){
             this.room = obj.room || null,
             this.parent = obj.parent || null;
     };
-    
-    
-<<<<<<< HEAD
-    return {SCHOOLS:SCHOOLS, getSortedDays:getSortedDays, loadPDF:loadPDF, getNovaUrl:getNovaUrl, processWeek:processWeek}
-}();
-=======
     return {Schdule:Schdule}
 }();
-
-window.onload = function(){
-    document.getElementById('NOVA-submit-btn').onclick = function(){
-        //Disabled for development
-        //var url = "php/phpProxy.php?id=" + id + "&week=" + week + "&school=" + schoolId;
-        var url = NOVA.getNovaUrl({schoolId:52550,id:document.getElementById('NOVA-user-id').value,week:36});//"Schedule.pdf";
-
-        NOVA.loadPDF(url,{width:window.innerWidth,height:500,renderMode:'contain'}).then(function(objs){
-            var viewport = objs.viewport,
-                page = objs.page,
-                textContent = objs.textContent;
-
-            var container = document.getElementById("pdfContainer");
-
-            var canvas = document.createElement("canvas");
-            var context = canvas.getContext('2d');
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-
-            container.appendChild(canvas);
-
-            var renderContext = {
-                canvasContext: context,
-                viewport: viewport
-            };
-
-            page.render(renderContext);
-            
-            window.h = NOVA.getSortedDays(textContent);
-            console.log(h);
-
-        }).catch(function(err){console.log(err)});
-
-        return false
-    };
-};
->>>>>>> analysis
