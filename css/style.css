@@ -69,6 +69,13 @@ main .center {
     max-width: 70%;
 }
 
+#faq h3::before{
+content:"Q: ";
+}
+#faq p::before{
+content:"A: ";
+}
+
 footer {
     background-color: #303030;   
     color: #dbdbdb;
@@ -82,4 +89,17 @@ a {
 }
 a:hover {
 	text-decoration:none;
+}
+#error{
+    display: none;
+    color: #fff;
+    padding: 5px 5em;
+    border-radius: 5em;
+    background-color: orange;
+}
+#error .message{
+    color: #dbdbdb;
+}
+#error a{
+    color: #dfe8f2;
 }
