@@ -45,7 +45,7 @@ var NOVA = function(){
             return 'php/phpProxy.php?id='+locObj.id+'&week='+locObj.week+'&school='+locObj.schoolId;
     };
     
-    var extrctDays = function(textContent){
+    var extractDays = function(textContent){
         textContent.items.sort(function(a,b){
             var ret = b.transform[5]-a.transform[5];
             if(ret==0)ret = a.transform[4]-b.transform[4];
@@ -74,11 +74,11 @@ var NOVA = function(){
         return days
     };
     var getSortedDays = function(textContent){
-        return sortDays(extrctDays(textContent));
+        return sortDays(extractDays(textContent));
     };
     
     var processDay = function(day,sorted){
-        if(!(day.children && day.day) || Object.prototype.toString.call(day.children)!=='[object Array]')throw 'Wrong type, expected [object Array]';
+        if(!(day.children && day.day) || Object.prototype.toString.call(day.children)!=='[object Array]')throw new NovaError({errCode:NovaError.prototype.errCodes.WRONG_TYPE,msg:'expected [object Array]'});
         
         if(!sorted)day.children.sort(function(a,b){
             var ret = b.transform[5]-a.transform[5];
@@ -86,11 +86,16 @@ var NOVA = function(){
             return ret
         });
         
+        //Make sure only contains two time columns
+        var timeCheck = [];
+        
         var lesson /*= {start:'',stop:'',contains:[]}*/,
             lessons = new Day(sortDayData(day.day.str));
         for(var i=0;i<day.children.length;i++){
             var t = isTime(day.children[i].str);
             if(t){
+                if(timeCheck.indexOf(day.children[i].transform[4])===-1)timeCheck.push(day.children[i].transform[4]);
+                
                 if(lesson){
                     var fill = sortLessonData({data:lesson.contains,start:lesson.start,stop:t});
                     var l = new Lesson(fill);
@@ -104,11 +109,12 @@ var NOVA = function(){
             }
             
         };
-        
+        //if not two time columns -> throw
+        if(timeCheck.length!==2)throw new NovaError({errCode:NovaError.prototype.errCodes.UNEXPECTED_STRUCTURE,msg:'incorect amount of time-columns: '+timeCheck.length, data:'Incomplete Day'});
         return lessons
     };
     var sortLessonData = function(data){
-        if(!data || !(data.data && data.start && data.start))throw 'missing parameter';
+        if(!data || !(data.data && data.start && data.stop))throw new NovaError({errCode:NovaError.prototype.errCodes.MISSING_PARAMETER,msg:'either undefined or missing data, start, or stop'});
         var course,
             teacher,
             room;
@@ -119,12 +125,14 @@ var NOVA = function(){
             course = data.data[0];
             teacher = data.data[1];
             room = data.data[2];
+        }else{
+            throw new NovaError({errCode:NovaError.prototype.errCodes.UNEXPECTED_STRUCTURE,msg:'Lesson data not recognized',data:data.data});
         }
         
         return {startTime:data.start,stopTime:data.stop,course:course,teacher:teacher,room:room}
     };
     var sortDayData = function(data){
-        if(typeof data !== 'string')throw 'Wrong type, expected string';
+        if(typeof data !== 'string')throw new NovaError({errCode:NovaError.prototype.errCodes.WRONG_TYPE,msg:'expected string'});
         
         var date = data.match(/\d{1,2}\/\d{1,2}/),
             str = data.replace(/(\s+|^)(\d{1,2}\/\d{1,2})(\s+|$)/,'');
@@ -133,7 +141,7 @@ var NOVA = function(){
         return {date:date[0],name:str}
     };
     var isTime = function(data){
-        if(typeof data !== 'string')throw 'Wrong type, expected string';
+        if(typeof data !== 'string')throw new NovaError({errCode:NovaError.prototype.errCodes.WRONG_TYPE,msg:'expected string'});
         
         var match = data.match(/\d\d:\d\d/g);
         var strict = data.match(/^\d\d:\d\d$/g);
@@ -142,26 +150,60 @@ var NOVA = function(){
         if(match)throw ('Unrecognized time value' + data);
         return null
     };
+    
+    var processWeek = function(arr, nr){
+        if(Object.prototype.toString.call(arr)!=='[object Array]' || arr.length!=5)throw new NovaError({errCode:NovaError.prototype.errCodes.WRONG_TYPE,msg:'expected array'});
+        
+        var week = new Week();
+        if(parseInt(nr)===nr)week.nr=nr;
+        //if(nr) will allow week nr to be undefined
+        else if(nr) throw new NovaError({errCode:NovaError.prototype.errCodes.WRONG_TYPE,msg:'expected int'});
+        
+        for(var i=0;i<arr.length;i++){
+            try {
+                week.appendDay(processDay(arr[i]),i);
+            }
+            catch(err){
+                if(err.errCode && err.errCode == NovaError.prototype.errCodes.UNEXPECTED_STRUCTURE && err.data == 'Incomplete Day')console.warn('No adv Day processing available. Skipping Day:'+i+' Week:'+nr);
+                //either handle wrong day or pass down the error
+                else throw err;
+            }
+        }
+        return week
+    };
 /****************************************************/
 /****************** Constructors ********************/
 /****************************************************/
     
-    var NovaError = function(obj) {
-        if(typeof obj == "string")
+    var NovaError = function NovaError(obj) {
+        if(typeof obj == 'string')
             this.message = obj;
         if(obj.errCode){
             this.message = this.errMessages[obj.errCode];
             this.errCode = obj.errCode;
         }
+        if(obj.msg && typeof obj.msg == 'string')
+            this.description = obj.msg;
+        if(obj.data)this.data = obj.data;
+        
+        this.error = new Error(this.message+'; '+this.description);
     };
     NovaError.prototype.errCodes = {
-        EXAMPLE_ERROR: 1
+        UNEXPECTED_ERROR: 1,
+        MISSING_PARAMETER: 2,
+        WRONG_TYPE: 3,
+        UNEXPECTED_STRUCTURE: 4
     };
     NovaError.prototype.errMessages = {
-        1: "Det här är ett exempelfel."
+        1: 'Unexpected error',
+        2: 'Missing parameter',
+        3: 'Wrong type',
+        3: 'Unexpected structure'
     };
+    NovaError.prototype.toString = function(){return '[object NovaError]'};
     
     var Schdule = function(obj){
+        if(!obj)obj = {};//prevent errors at undefined obj
         this.schoolId = obj.schoolId || null,
             this.id = obj.id || null;
         
@@ -198,7 +240,19 @@ var NOVA = function(){
     WeekBascet.prototype.toJSON = function(){};
     
     var Week = function(obj){
-        this.nr = obj.nr || null;
+        if(!obj)obj = {};//prevent errors at undefined obj
+        this.nr = obj.nr || null,
+            this.days = [];
+    };
+    Week.prototype.appendDay = function(day, id){
+        if(!day)throw new NovaError({errCode:NovaError.prototype.errCodes.MISSING_PARAMETER,msg:'day is not defined'});
+        //control Day constructor. Must be Day!
+        day.parent = this;
+        if(!day.weekDay){
+            if(parseInt(id)==id)day.weekDay = id;
+            else day.weekDay = this.days.length;
+        }
+        this.days.push(day);
     };
     Week.prototype.toXML = function(ignoreStart){};
     Week.prototype.toICS = function(ignoreStart){};
@@ -212,7 +266,8 @@ var NOVA = function(){
             this.lessons = [];
     };
     Day.prototype.appendLesson = function(lesson){
-        if(!lesson)throw 'missing parameter';
+        if(!lesson)throw new NovaError({errCode:NovaError.prototype.errCodes.MISSING_PARAMETER,msg:'lesson is not defined'});
+        //control Lesson constructor. Must be Lesson!
         lesson.parent = this;
         this.lessons.push(lesson);
     };
@@ -232,9 +287,8 @@ var NOVA = function(){
     };
     
     
-    return {getSortedDays:getSortedDays, loadPDF:loadPDF, getNovaUrl:getNovaUrl, processDay:processDay}
+    return {getSortedDays:getSortedDays, loadPDF:loadPDF, getNovaUrl:getNovaUrl, processWeek:processWeek}
 }();
-
 
 window.onload = function(){
     document.getElementById('NOVA-submit-btn').onclick = function(){
