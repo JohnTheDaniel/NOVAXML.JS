@@ -7,7 +7,7 @@ var NOVA = function(){
                    "Norra Real": 81530,
                    "Östra Real": 59150
                   };
-    var PROGRESS_STEPS = {getPdf:['Document Recived',
+    var PROGRESS_STEPS = {getPdf:['Document Received',
                                   'Page Loaded',
                                   'Done Loading'
                              ],
@@ -15,7 +15,7 @@ var NOVA = function(){
                                    'Week created'
                                   ],
                           combined:['Initiating Week',
-                                    'Week Aplied'
+                                    'Week Applied'
                                    ]
                          };
     var FIRST_WEEK = 1,
@@ -36,7 +36,7 @@ var NOVA = function(){
                 pdf.getPage(1).then(function(page) {
                     progressFn({step:1,string:PROGRESS_STEPS.getPdf[1]});
                     var viewport;
-                    /*scale handeler*/
+                    /*scale handler*/
                     if(!scale || !isNaN(parseFloat(scale))){
                         viewport = page.getViewport(scale||1);
                     }else if(scale.width || scale.height){
@@ -468,5 +468,5 @@ var NOVA = function(){
             this.room = obj.room || null,
             this.parent = obj.parent || null;
     };
-    return {Schdule:Schdule}
+    return {SCHOOLS:SCHOOLS, Schdule:Schdule}
 }();

@@ -7,7 +7,7 @@
         <meta charset="utf-8">
         <script src="js/pdfjs/pdf.js"></script>
         <script src="js/NOVAXML.js" type="text/javascript"></script>
-        <script src="js/demo.js" type="text/javascript"></script>
+        <script src="js/page.js" type="text/javascript"></script>
     </head>
     <body>
         <header>
@@ -21,14 +21,7 @@
         <main>
             <div class="carry">
                 <div class="center-container">
-                    <form class="center-child" onsubmit='NOVA.startNova()' id="NOVA-input-form">
-                        <input type="text" placeholder="Personnummer" id="NOVA-user-id">
-                        <select id="NOVA-period-list">
-                            <option value="Ht">Höstterminen</option>
-                            <option value="Vt">Vårterminen</option>  
-                        </select>
-                        <input type="button" id="NOVA-submit-btn" value="Generera sig!">
-                    </form>
+                    <form class="center-child" id="NOVA-input-form"></form>
                 </div>
             </div>
 

@@ -63,11 +63,10 @@ var addForkMe = function(color,pos,size,parent,usrStyle){
 };
 
 var schoolList = function(){
-    var /*id = 'schools-select-id',*/
-        element;
-    var setup = function(schoolIds, parent, insertBefore) {
+    var element;
+    var setup = function(schoolIds) {
         //Create select
-        var selectSchool = document.createElement("select");
+        element = document.createElement("select");
         //selectSchool.id = id;
         //Create options and insert them into select
         for (var k in schoolIds){
@@ -77,16 +76,127 @@ var schoolList = function(){
             option.value = schoolIds[k];
 
             //Insert option into select
-            selectSchool.appendChild(option);
+            element.appendChild(option);
         }
         //insert select into DOM.
-        element = selectSchool;
-        parent.insertBefore(selectSchool, insertBefore);
+        return element
     }
     var getElement = function(){
         return element
     };
     return {setup:setup,getElement:getElement}
+}();
+
+var weekSelect = function(){
+    var toggle = {string:'Avancerade alternativ',elmnt:null},
+        list = {strings:{HT:'39-51',VT:'2-24'},elmnt:null},
+        weeks = {string:' [34] | [34,35,36] | [34-51]',elmnt:null};
+    var all = {toggle:toggle,};
+    
+    var init = function(){
+        //drop-down
+        list.elmnt = document.createElement('select');
+        for (var k in list.strings){
+            var option = document.createElement("option");
+            option.textContent = k;
+            option.value = list.strings[k];
+            list.elmnt.appendChild(option);
+        }
+        list.elmnt.display = 'inline';
+        
+        //textbox
+        var span = document.createElement('span');
+        weeks.elmnt = document.createElement('input');
+        weeks.elmnt.type = 'text';
+        weeks.elmnt.placeholder = weeks.string;
+        span.appendChild(weeks.elmnt);
+        span.style.display = 'none';
+        
+        //toggle
+        var s2 = document.createElement('span');
+        var t = document.createTextNode(toggle.string);
+        var t2 = document.createElement('span');
+        t2.appendChild(t);
+        toggle.elmnt = document.createElement('input');
+        toggle.elmnt.type = 'checkbox';
+        s2.appendChild(toggle.elmnt);
+        s2.appendChild(t2);
+        t2.onclick = function(){
+            toggle.elmnt.checked = !toggle.elmnt.checked;
+            updateToggle()
+        };
+        toggle.elmnt.onchange = function(){
+            updateToggle()
+        };
+        
+        return [list.elmnt,span,s2]
+    };
+    var updateToggle = function(){
+        if(toggle.elmnt.checked){
+            list.elmnt.style.display = 'none';
+            weeks.elmnt.parentElement.style.display = 'inline';
+        }else{
+            list.elmnt.style.display = 'inline';
+            weeks.elmnt.parentElement.style.display = 'none';
+        }
+    };
+    var getWeeks = function(){
+        var val;
+        if(toggle.elmnt.checked)
+            val = weeks.elmnt.value;
+        else
+            val = list.elmnt.value;
+        
+        var regEx = /(\d{1,2})-(\d{1,2})/g;
+        if(val.match(regEx)){
+            var m = regEx.exec(val);
+            if(m[1]<m[2])return {first:m[1],last:m[2]};
+        }else if(val.indexOf(',')!==-1){
+            val = val.split(',');
+            var ret = [];
+            for(var i=0;i<val.length;i++){
+                var c = parseInt(val[i]);
+                if(!isNaN(c))ret.push(c);
+                else console.warn('Unrecoginzed week number, removed!');
+            }
+            if(ret.length>0)return ret;
+        }else if(!isNaN(parseInt(val)))return parseInt(val);
+        
+        alert('Fel vecko-informatin.\n Vi rekomenderar att du väljer en termin istället.\n du gör detta genom att avaktivera "Avancerade alternativ"');
+        throw 'Wrong input: Weeks';
+    };
+    return {init:init,getWeeks:getWeeks}
+}();
+
+var form = function(){
+    var inputs = {id:{elmnt:null,string:'Personnummer'},schoolId:null,period:'',submit:'Generera sig!'};
+    var create = function(parent){
+        inputs.id.elmnt = document.createElement('input');
+        inputs.id.elmnt.type = 'text';
+        inputs.id.elmnt.placeholder = inputs.id.string;
+        parent.appendChild(inputs.id.elmnt);
+        
+        inputs.schoolId = schoolList;
+        parent.appendChild(inputs.schoolId.setup(NOVA.SCHOOLS));
+        
+        inputs.period = weekSelect;
+        var weekSelects = inputs.period.init();
+        parent.appendChild(weekSelects[0]);
+        parent.appendChild(weekSelects[1]);
+        parent.appendChild(weekSelects[2]);
+        
+        var sbmt = document.createElement('input');
+        sbmt.type = 'submit';
+        sbmt.value = inputs.submit;
+        parent.appendChild(sbmt);
+    };
+    var isIdValid = function(id){
+        return id
+    };
+    var getData = function(){
+        return {id:isIdValid(inputs.id.elmnt.value),schoolId:inputs.schoolId.getElement().value,weeks:inputs.period.getWeeks()}
+    };
+    return {create:create,getData:getData}
 }();
 
 var stringifyJSON = function(obj){
@@ -158,6 +268,14 @@ var successFn = function(objs){
     console.log(h);
 
 };
+var progressFn = function(){
+    var weekIndex = {12:'WeekObj'};
+    
+    var main = function(e){
+        console.log(e);
+    };
+    return main
+}();
 
 window.onload = function(){
     //Add 'fork me' button top right.
@@ -166,11 +284,17 @@ window.onload = function(){
     //Set up a select-option thingy with the SCHOOL-IDS values and content, into the input_form, before periodList. 
     schoolList.setup(NOVA.SCHOOLS, document.getElementById("NOVA-input-form"), document.getElementById("NOVA-period-list"));
     
-    document.getElementById('NOVA-submit-btn').onclick = function(){
-        var url = NOVA.getNovaUrl({schoolId:schoolList.getElement().value,id:document.getElementById('NOVA-user-id').value,week:prompt('week:')});
-
-        NOVA.loadPDF(url,{width:window.innerWidth,height:500,renderMode:'contain'}).then(successFn).catch(errorFunction);
-
+    
+    var mittSchema = new NOVA.Schdule();
+    var frm = document.getElementById('NOVA-input-form');
+    form.create(frm);
+    frm.onsubmit = function(){
+        var objs = form.getData();
+        mittSchema.loadWeeks({progressFn:progressFn,id:objs.id,schoolId:objs.schoolId,weeks:objs.weeks}).then(function(e){
+            console.info(e);
+        },function(err){
+            console.info(err);
+        });
         return false
     };
 };
