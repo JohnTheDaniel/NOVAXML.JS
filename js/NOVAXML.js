@@ -276,7 +276,15 @@ var NOVA = function(){
             }
         }
     };
-    Schdule.prototype.getWeeks = function(){/*Konstruera weekBasket och return*/};
+    Schdule.prototype.getWeeks = function(obj){
+        if(obj && obj=='all'){
+            obj=[];
+            for(var i=0;i<this.weeks.length;i++){
+                obj.push(this.weeks[i].nr);
+            }
+        }
+        return new WeekBascet(weekDataToArray(obj),this.weeks);
+    };
     Schdule.prototype.loadWeeks = function(obj){
         var id = obj.id,
             schoolId = obj.schoolId,
@@ -389,10 +397,20 @@ var NOVA = function(){
         this.weeks.push(week);
     };
     
-    var WeekBascet = function(obj){/*Construct array of selected weeks*/
-        var type = Object.prototype.toString.call(obj);
-        if(type=='[object Array]'){
-        }else if(obj.start && obj.end){
+    var WeekBascet = function(arr,weeks){/*Construct array of selected weeks*/
+        if(Object.prototype.toString.call(arr)!=='[object Array]')
+            throw new NovaError({errCode:NovaError.prototype.errCodes.WRONG_TYPE,msg:'expected [object Array]'});
+        var weekNrs = [];
+        for(var i=0;i<weeks.length;i++)
+            weekNrs.push(weeks[i].nr);
+        
+        arr.sort();
+        for(var i=0;i<arr.length;i++){
+            var c = parseInt(arr[i]);
+            if(isNaN(c))console.warn('invalid week number, skipping');
+            var index = weekNrs.indexOf(c);
+            if(index!==-1)
+                this.push(weeks[index]);
         }
         //return new Array()//inherit array
     };
