@@ -269,9 +269,68 @@ var successFn = function(objs){
 
 };
 var progressFn = function(){
-    var weekIndex = {12:'WeekObj'};
+    var weekIndex = {12:'WeekObj'},
+        containerId = 'pdfContainer';
     
+    var newWeek = function(weekNr){
+        var parent = document.getElementById(containerId);
+        
+        var holder = document.createElement('div');
+        holder.className = 'pdf-paper';
+
+        var text = document.createElement('span');
+        text.className = 'progress';
+        text.innerHTML = '<b>VECKA '+weekNr+'</b>';
+        
+        holder.appendChild(text);
+        parent.appendChild(holder);
+        
+        holder.responses = [];
+        holder.weekNr = weekNr;
+        
+        weekIndex[weekNr] = holder;
+    };
+    var addCanvas = function(e){
+        if(!weekIndex[e.weekNr])return;
+        var canvas = document.createElement('canvas');
+        canvas.width = e.viewport.width;
+        canvas.height = e.viewport.height;
+        var ctx = canvas.getContext('2d');
+        
+        weekIndex[e.weekNr].insertBefore(canvas,weekIndex[e.weekNr].children[0]);
+        e.page.render({canvasContext:ctx,viewport:e.viewport});
+    };
+    var changeColor = function(bool,weekNr){
+        weekIndex[weekNr].done = true;
+        
+        var color,
+            text;
+        if(bool){
+            color = '#afa';
+            text = 'DONE';
+        }else{
+            color = '#faa';
+            text = 'FAILED';
+        }
+        weekIndex[weekNr].style.backgroundColor = color;
+        weekIndex[weekNr].getElementsByClassName('progress')[0].innerHTML+='<br>'+text;
+    };
+    var addString = function(e){
+        var obj = weekIndex[e.weekNr]
+        e.timeStamp = new Date().getTime();
+        var length = obj.responses.push(e);
+        /*setTimeout(function(length,obj){
+            var len = obj.responses.length;
+            if(len == length && !obj.done)
+                changeColor(false,obj.weekNr);
+        },1500,length,obj);*/
+        obj.getElementsByClassName('progress')[0].innerHTML+='<br>'+e.string;
+    };
     var main = function(e){
+        if(e.stepType == 'combined' && e.step==0)newWeek(e.weekNr);
+        if(e.stepType == 'analyse' && e.step==0)addCanvas(e);
+        if(e.string)addString(e);
+        if(e.stepType == 'combined' && e.step==1)changeColor(e.succeded,e.weekNr);
         console.log(e);
     };
     return main

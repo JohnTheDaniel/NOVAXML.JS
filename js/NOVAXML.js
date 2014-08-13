@@ -321,15 +321,14 @@ var NOVA = function(){
                 else{
                     progressFn({weekNr:curr,stepType:'combined',step:0,string:PROGRESS_STEPS.combined[0]});
 
-                    var load = t.loadWeek({nr:curr,id:id,schoolId:schoolId,scale:scale,progressFn:progressFn});
-                    load.then(function(e){
-                        progressFn({weekNr:e,stepType:'combined',step:1,string:PROGRESS_STEPS.combined[1],data:e,succeded:true});
+                    t.loadWeek({nr:curr,id:id,schoolId:schoolId,scale:scale,progressFn:progressFn}).then(function(e){
+                        progressFn({weekNr:e.weekNr,stepType:'combined',step:1,string:PROGRESS_STEPS.combined[1],data:e,succeded:true});
                         if(--completed<1){
                             if(failed.length>0) reject(failed);
                             else resolve(t);
                         }
                     },function(err){
-                        progressFn({weekNr:curr,stepType:'combined',step:1,string:PROGRESS_STEPS.combined[1],data:err,succeded:false});
+                        progressFn({weekNr:err.weekNr,stepType:'combined',step:1,string:PROGRESS_STEPS.combined[1],data:err,succeded:false});
                         failed.push(err);
                         if(--completed<1){
                             if(failed.length>0) reject(failed);
@@ -375,16 +374,17 @@ var NOVA = function(){
                 var week;
                 try{
                     var sort = getSortedDays(objs.textContent);
-                    if(progress)progress({weekNr:nr,stepType:'analyse',step:0,string:PROGRESS_STEPS.analyse[0]});
+                    if(progress)progress({weekNr:nr,stepType:'analyse',step:0,string:PROGRESS_STEPS.analyse[0],viewport:objs.viewport,page:objs.page});
                     week = processWeek(sort);
                     week.nr = nr;
                     if(progress)progress({weekNr:nr,stepType:'analyse',step:1,string:PROGRESS_STEPS.analyse[1]});
                     t.appendWeek(week);
-                    resolve({weekNr:nr,week:week,viewport:objs.viewport,page:objs.page,textContent:objs.textContent})
+                    resolve({weekNr:nr,week:week,viewport:objs.viewport,page:objs.page,textContent:objs.textContent});
                 }catch(err){
                     /*Analyzing error and resolve it here*/
                     reject({error:err,weekNr:nr})
                 }
+                 resolve({weekNr:nr,week:week,viewport:objs.viewport,page:objs.page,textContent:objs.textContent});
             },function(err){reject(err)});
         });
         return promise
