@@ -21,7 +21,17 @@ var NOVA = function(){
     var FIRST_WEEK = 1,
         LAST_WEEK = 52,
         DENIED_WEEKS = [25,26,27,28,29,30,31,32,33];
+<<<<<<< HEAD
 
+=======
+    
+    var ICS_BEGINING = 'BEGIN:VCALENDAR\n'+
+                       'PRODID:-//akaProxy//NOVAMINER public Beta//EN\n'+
+                       'VERSION:2.0\n'+
+                       'X-WR-CALNAME:Schema\n'+
+                       'X-WR-CALDESC:Skolschema genererat av Novaminers\n',
+        ICS_END = 'END:VCALENDAR';
+>>>>>>> master
 /****************************************************/
 /******************** Analysis **********************/
 /****************************************************/
@@ -283,7 +293,15 @@ var NOVA = function(){
             }
         }
     };
-    Schdule.prototype.getWeeks = function(){/*Konstruera weekBasket och return*/};
+    Schdule.prototype.getWeeks = function(obj){
+        if(obj && obj=='all'){
+            obj=[];
+            for(var i=0;i<this.weeks.length;i++){
+                obj.push(this.weeks[i].nr);
+            }
+        }
+        return new WeekBascet(weekDataToArray(obj),this.weeks);
+    };
     Schdule.prototype.loadWeeks = function(obj){
         var id = obj.id,
             schoolId = obj.schoolId,
@@ -396,10 +414,20 @@ var NOVA = function(){
         this.weeks.push(week);
     };
     
-    var WeekBascet = function(obj){/*Construct array of selected weeks*/
-        var type = Object.prototype.toString.call(obj);
-        if(type=='[object Array]'){
-        }else if(obj.start && obj.end){
+    var WeekBascet = function(arr,weeks){/*Construct array of selected weeks*/
+        if(Object.prototype.toString.call(arr)!=='[object Array]')
+            throw new NovaError({errCode:NovaError.prototype.errCodes.WRONG_TYPE,msg:'expected [object Array]'});
+        var weekNrs = [];
+        for(var i=0;i<weeks.length;i++)
+            weekNrs.push(weeks[i].nr);
+        
+        arr.sort();
+        for(var i=0;i<arr.length;i++){
+            var c = parseInt(arr[i]);
+            if(isNaN(c))console.warn('invalid week number, skipping');
+            var index = weekNrs.indexOf(c);
+            if(index!==-1)
+                this.push(weeks[index]);
         }
         //return new Array()//inherit array
     };
@@ -418,8 +446,59 @@ var NOVA = function(){
         
         return xml;
     };
-    WeekBascet.prototype.toICS = function(){};
-    WeekBascet.prototype.toJSON = function(){};
+    var getCurrentDate = function(onlyDate){
+        var h = new Date();
+        var yr = h.getFullYear().toString();
+        var month = h.getMonth().toString();
+        if(month.length==1)month='0'+month;
+        
+        if(onlyDate=='year'){
+            if(parseInt(month)<8)
+                return [parseInt(yr),parseInt(yr)-1];
+            else
+                return [parseInt(yr)+1,parseInt(yr)];
+        }
+        
+        var day = h.getDate().toString();
+        if(day.length==1)day='0'+day;
+ 
+        var hour = h.getHours().toString();
+        if(hour.length==1)hour='0'+hour;
+        var min = h.getMinutes().toString();
+        if(min.length==1)min='0'+min;
+        var sec = h.getSeconds().toString();
+        if(sec.length==1)sec='0'+sec;
+ 
+        var ret =  yr+month+day+'T';
+        if(!onlyDate)return ret+hour+min+sec+'Z';
+        return ret
+    }
+    WeekBascet.prototype.toICS = function(maxLength, baseId){
+        //maxLength, gives an option to split the ics strings every [maxLength] week.
+        //It will always keep weeks in same string
+        var ics = [ICS_BEGINING],
+            stop = {prev:0,index:0},
+            yr = getCurrentDate('year'),
+            today = getCurrentDate();
+        if(maxLength && isNaN(parseFloat(maxLength)) && parseFloat(maxLength)>=1)
+            throw new NovaError({errCode:NovaError.prototype.errCodes.WRONG_TYPE,msg:'expected a Number greater than 1'});
+        
+        for(var i=0;i<this.length;i++){
+            if(maxLength && stop.prev+maxLength<=i){
+                stop.prev+=maxLength;
+                ics[stop.index++]+=ICS_END;
+                ics[stop.index]=ICS_BEGINING;
+            }
+            var id = null;
+            if(baseId)id = baseId.toString()+(this[i].nr || i);
+            ics[stop.index]+=this[i].toICS(true,yr,(id || this[i].nr || i),today);
+        }
+        ics[stop.index]+=ICS_END;
+        
+        if(ics.length==1)return ics[0];
+        return ics
+    };
+    
     
     var Week = function(obj){
         if(!obj)obj = {};//prevent errors at undefined obj
@@ -438,7 +517,24 @@ var NOVA = function(){
         this.days.push(day);
     };
     Week.prototype.toXML = function(ignoreStart){};
-    Week.prototype.toICS = function(ignoreStart){};
+    Week.prototype.toICS = function(ignoreStart,yearOverride,baseId,currentDate){
+        var ics = '';
+        if(baseId === true)baseId=this.nr;
+        if(!ignoreStart)ics = ICS_BEGINING;
+        
+        for(var i=0;i<this.days.length;i++){
+            var id;
+            if(baseId)id=baseId.toString()+i;
+            try{
+                ics+=this.days[i].toICS(true,yearOverride,null,id,currentDate);
+            }catch(err){
+                //if wrong date calculate 
+                console.warn('Error while parsing Day, skipping');
+            }
+        }
+        if(!ignoreStart)ics += ICS_END;
+        return ics
+    };
     Week.prototype.toJSON = function(){};
     Week.prototype.getDay = function(){};
     
@@ -455,7 +551,35 @@ var NOVA = function(){
         this.lessons.push(lesson);
     };
     Day.prototype.toXML = function(ignoreStart){};
-    Day.prototype.toICS = function(ignoreStart){};
+    Day.prototype.toICS = function(ignoreStart,yearOverride,dateOverride,baseId,currentDate){
+        var getDate = function(d){
+            if(d && d.match(/\d{1,2}\/\d{1,2}/g))
+                return d.match(/\d{1,2}\/\d{1,2}/g)[0].split('/');
+        }
+        var date = getDate(dateOverride) || getDate(this.date) || null,
+            year = yearOverride || getCurrentDate('year');
+        if(!date)
+            throw new NovaError({errCode:NovaError.prototype.errCodes.INVALID_DATA,msg:'don\'t understand date'});
+        
+        if(date[1]<8){//date[0]->day,date[1]->month,date[2]->year
+            date.push(year[0])
+        }else{
+            date.push(year[1])
+        }
+        if(date[0].length==1)date[0]='0'+date[0];
+        if(date[1].length==1)date[1]='0'+date[1];
+        
+        var ics = '';
+        if(!ignoreStart)ics = ICS_BEGINING;
+        
+        for(var i=0;i<this.lessons.length;i++){
+            var id;
+            if(baseId)id=baseId.toString()+i;
+            ics+=this.lessons[i].toICS(true,date,id,currentDate);
+        }
+        if(!ignoreStart)ics += ICS_END;
+        return ics
+    };
     Day.prototype.toJSON = function(){};
     Day.prototype.getLessonAtTime = function(){/*Low prority*/};
     
@@ -468,5 +592,46 @@ var NOVA = function(){
             this.room = obj.room || null,
             this.parent = obj.parent || null;
     };
+<<<<<<< HEAD
     return {SCHOOLS:SCHOOLS, Schdule:Schdule}
+=======
+    Lesson.prototype.toICS = function(ignoreStart,date,idOverride,currentDate){
+        var ics = '',
+            currentDate = currentDate || getCurrentDate(),
+            idOverride = idOverride || parseInt(Math.random()*100);
+        if(!ignoreStart)
+            ics = ICS_BEGINING;
+        if(!(this.course && this.startTime && this.stopTime)){
+            console.warn('Illegal lesson, skipping!');
+            return '';
+        }
+        
+        var e = this.stopTime.split(':'),
+            s = this.startTime.split(':'),
+            f;
+        if(date && date[2])
+            f = date[2]+date[1]+date[0]+'T';
+        else f = getCurrentDate(true);//Should this be a throw
+        
+        //add error handling here
+        
+        ics+='BEGIN:VEVENT\n'+
+             'UID:uid'+idOverride+'@example.com\n'+
+             'SEQUENCE:0\n'+
+             'DTSTAMP:'+currentDate+'\n'+
+             'CREATED:'+currentDate+'\n'+
+             'LAST-MODIFIED:'+currentDate+'\n'+
+             'SUMMARY:'+this.course+'\n'+
+             'DESCRIPTION:Teacher:'+this.teacher+'\n'+
+             'LOCATION:'+this.room+'\n'+
+             'DTSTART:'+f+s[0]+s[1]+'00Z\n'+
+             'DTEND:'+f+e[0]+e[1]+'00Z\n'+
+             'END:VEVENT\n';
+        
+        if(!ignoreStart)ics+=ICS_END;
+        return ics
+    };
+    
+    return {Schdule:Schdule}
+>>>>>>> master
 }();
