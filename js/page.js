@@ -89,7 +89,7 @@ var schoolList = function(){
 
 var weekSelect = function(){
     var toggle = {string:'Avancerade alternativ',elmnt:null},
-        list = {strings:{HT:'39-51',VT:'2-24'},elmnt:null},
+        list = {strings:{HT:'35-51',VT:'2-24'},elmnt:null},
         weeks = {string:' [34] | [34,35,36] | [34-51]',elmnt:null};
     var all = {toggle:toggle,};
     
@@ -344,7 +344,7 @@ window.onload = function(){
     schoolList.setup(NOVA.SCHOOLS, document.getElementById("NOVA-input-form"), document.getElementById("NOVA-period-list"));
     
     
-    var mittSchema = new NOVA.Schdule();
+    window.mittSchema = new NOVA.Schdule();
     var frm = document.getElementById('NOVA-input-form');
     form.create(frm);
     frm.onsubmit = function(){
