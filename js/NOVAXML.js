@@ -1,3 +1,15 @@
+/*
+ * NOVAXML.js -- analyzing noveschem pdfs through the use of PDF.js and phpProxy
+ *
+ * Copyright (C) 2014 akaProxy
+ *                    Author: Erik Nygren <erik@nygrens.eu>
+ *                            John Daniel Bossér <daniel@bosser.com>
+ *
+ * This file may be used under the terms of the MIT Licence
+ * which can be found in the project root
+ */
+
+
 /*TODO: get by date*/
 var NOVA = function(){
     
@@ -28,6 +40,7 @@ var NOVA = function(){
                        'X-WR-CALNAME:Schema\n'+
                        'X-WR-CALDESC:Skolschema genererat av Novaminers\n',
         ICS_END = 'END:VCALENDAR';
+    var BASE_URL = ['php/phpProxy.php?id=','&week=','&school=',''];
 /****************************************************/
 /******************** Analysis **********************/
 /****************************************************/
@@ -74,7 +87,7 @@ var NOVA = function(){
     };
     var getNovaUrl = function(locObj){
         if(locObj.schoolId && locObj.id && locObj.week)
-            return 'php/phpProxy.php?id='+locObj.id+'&week='+locObj.week+'&school='+locObj.schoolId;
+            return BASE_URL[0]+locObj.id+BASE_URL[1]+locObj.week+BASE_URL[2]+locObj.schoolId+BASE_URL[4];
         else throw new NovaError({errCode:NovaError.prototype.errCodes.MISSING_PARAMETER,msg:'can\'t build URL'});
     };
     
@@ -625,5 +638,5 @@ var NOVA = function(){
         return ics
     };
     
-    return {SCHOOLS:SCHOOLS, Schdule:Schdule}
+    return {SCHOOLS:SCHOOLS, Schdule:Schdule, editConstants: null}
 }();
