@@ -168,7 +168,12 @@ var NOVA = function(){
         WRONG_PARAMS_WEEKBASCET: 101,       
         WEEKBASCET_EMPTY: 102,
         
-        INFINITE_LESSON: 401
+        WEEK_NUMBER_MISSING: 201,
+        
+        WEEKDAY_NOT_SPECIFIED: 301,
+        
+        INFINITE_LESSON: 401,
+        COURSE_NOT_SPECIFIED: 402
     };
     NovaError.prototype.errMessages = {
         1: "Det här är ett exempelfel.",
@@ -177,7 +182,13 @@ var NOVA = function(){
         
         102: "WeekBascet is empty. Call NOVA.Schedule.getWeeks(params) to get a filled WeekBascet.",
         
-        401: "Lesson lacks either a start or stop time. Make sure to set Lesson.startTime and Lesson.stopTime."
+        201: "Week number not specified. Pleace provide weekNumber in the param-object: Week({weekNumber:[integer]})",
+        
+        301: "Week day not specified. Pleace provide weekDay in the param-object: Day({weekDay:[integer 0 to 5]})", 
+        
+        401: "Lesson lacks either a start or stop time. Make sure to set Lesson.startTime and Lesson.stopTime.",
+        
+        402: "Lesson lacks a course name. Please provide a param with an object that specifies the course, example Lesson({course:'course name'})"
     };
     
     var Schdule = function(obj){
@@ -224,6 +235,13 @@ var NOVA = function(){
     
     var WeekBascet = function(){/*Hold array of selected weeks from Schedule.getWeeks()*/};
     WeekBascet.prototype = new Array();
+    
+    /**
+     *  This function takes the weekbascet and exports all of its interial weeks to xml. 
+     *  
+     *  returns:
+     *      string of xml. 
+     */
     WeekBascet.prototype.toXML = function(){     
         if(this.length === 0) {throw new NovaError({errCode: NovaError.errCodes.WEEKBASCET_EMPTY})}
         var xml = "";
@@ -252,10 +270,22 @@ var NOVA = function(){
     
     var Week = function(obj){
         //Must supply week number
-        if(typeof obj.weekNumber === 'undefined') {throw new NovaError({errCode: NovaError.prototype.errCodes.EXAMPLE_ERROR})}
+        if(typeof obj.weekNumber === 'undefined') {throw new NovaError({errCode: NovaError.prototype.errCodes.WEEK_NUMBER_MISSING})}
         else {this.weekNumber = parseInt(obj.weekNumber)}
         this.days = [];
     };
+    
+    /**
+     * This function takes the whole week and output its interials to xml. 
+     * 
+     * params:
+     *   boolean: should we output the week by itself or as a part of a schedule?
+     *            If false, the week will be wrapped around <novaschedule></novaschedule>
+     *            If true, only the interials of the week will be outputted.
+     *
+     * returns:
+     *     string of xml.
+     */
     Week.prototype.toXML = function(ignoreStart){
                 
         //Sort days, just in case 
@@ -299,7 +329,7 @@ var NOVA = function(){
     var Day = function(obj){
         if(obj.weekDay == null){
             //Must supply weekday.
-            throw new NovaError({errCode: NovaError.prototype.errCodes.EXAMPLE_ERROR});          
+            throw new NovaError({errCode: NovaError.prototype.errCodes.WEEKDAY_NOT_SPECIFIED});          
         } else {
             this.weekDay = obj.weekDay;
         }
@@ -308,6 +338,17 @@ var NOVA = function(){
             this.lessons = [];
         
     };
+    
+    /**
+     * This function outputs the day in xml form, with its lessons.
+     * 
+     * params:
+     *   boolean: should we output the day by itself or as a part of a bigger schedule?
+     *            If false, the day will be wrapped around <novaschedule></novaschedule>
+     *            If true, only the interials of the day will be outputted.
+     * returns:
+     *     string of xml.  
+     */
     Day.prototype.toXML = function(ignoreStart){
         
         //Sort lessons of the day.
@@ -353,7 +394,7 @@ var NOVA = function(){
         return xml;
     };
     Day.prototype.appendLesson = function(lesson){
-        if(!lesson)throw 'missing parameter';
+        if(!lesson)throw 'missing parameter, you need to provide a lesson';
         lesson.parent = this;
         this.lessons.push(lesson);
     };
@@ -365,13 +406,25 @@ var NOVA = function(){
     var Lesson = function(obj){
         if(!obj)obj = {};
         //Must supply start and stop time.
-        if(!(obj.startTime || obj.stopTime)) throw new NovaError({errCode: NovaError.prototype.errCodes.INFINITE_LESSON});
+        if(!(obj.startTime || obj.stopTime)) throw new NovaError({errCode: NovaError.prototype.errCodes.WEEKDAY_NOT_SPECIFIED});
         this.startTime = obj.startTime,
         this.stopTime = obj.stopTime,
         this.course = obj.course || null,
         this.teacher = obj.teacher || null,
         this.room = obj.room || null;
     };
+    
+    /**
+     * This function outputs a lesson to xml. 
+     * 
+     * params:
+     *   boolean: should we output the lesson by itself or as a part of a schedule?
+     *            If false, the lesson will be wrapped around <novaschedule></novaschedule>
+     *            If true, only the interials of the lesson will be outputted.
+     *
+     * returns:
+     *     string of xml. 
+     */
     Lesson.prototype.toXML = function(ignoreStart){
         var xml = "";
         //Begin
@@ -382,14 +435,14 @@ var NOVA = function(){
         
         //Start time
         if(this.startTime === null) {
-            throw new NovaError({errCode: NovaError.errCodes.EXAMPLE_ERROR})
+            throw new NovaError({errCode: NovaError.prototype.errCodes.INFINITE_LESSON})
         } else {
             xml = xml + "<start>" + this.startTime + "</start>";   
         }
         
         //Stop time
         if(this.stopTime === null) {
-            throw new NovaError({errCode: NovaError.errCodes.EXAMPLE_ERROR})
+            throw new NovaError({errCode: NovaError.prototype.errCodes.INFINITE_LESSON})
         } else {
             xml = xml + "<stop>" + this.stopTime + "</stop>";   
         }
@@ -398,7 +451,7 @@ var NOVA = function(){
         //TODO: do not render incorrectly if course does not exist. Schedule should be able to render without course.
         //However, a whole day cannot be rendered if a start time does not exist, that is the difference.
         if(this.course === null){
-            throw new NovaError({errCode: NovaError.prototype.errCodes.EXAMPLE_ERROR})
+            throw new NovaError({errCode: NovaError.prototype.errCodes.})
         } else {
             xml = xml + "<course>" + this.course + "</course>";   
         }
