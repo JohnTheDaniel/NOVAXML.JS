@@ -21,9 +21,6 @@ var NOVA = function(){
     var FIRST_WEEK = 1,
         LAST_WEEK = 52,
         DENIED_WEEKS = [25,26,27,28,29,30,31,32,33];
-<<<<<<< HEAD
-
-=======
     
     var ICS_BEGINING = 'BEGIN:VCALENDAR\n'+
                        'PRODID:-//akaProxy//NOVAMINER public Beta//EN\n'+
@@ -31,7 +28,6 @@ var NOVA = function(){
                        'X-WR-CALNAME:Schema\n'+
                        'X-WR-CALDESC:Skolschema genererat av Novaminers\n',
         ICS_END = 'END:VCALENDAR';
->>>>>>> master
 /****************************************************/
 /******************** Analysis **********************/
 /****************************************************/
@@ -592,9 +588,6 @@ var NOVA = function(){
             this.room = obj.room || null,
             this.parent = obj.parent || null;
     };
-<<<<<<< HEAD
-    return {SCHOOLS:SCHOOLS, Schdule:Schdule}
-=======
     Lesson.prototype.toICS = function(ignoreStart,date,idOverride,currentDate){
         var ics = '',
             currentDate = currentDate || getCurrentDate(),
@@ -632,6 +625,5 @@ var NOVA = function(){
         return ics
     };
     
-    return {Schdule:Schdule}
->>>>>>> master
+    return {SCHOOLS:SCHOOLS, Schdule:Schdule}
 }();
