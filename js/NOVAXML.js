@@ -87,7 +87,7 @@ var NOVA = function(){
     };
     var getNovaUrl = function(locObj){
         if(locObj.schoolId && locObj.id && locObj.week)
-            return BASE_URL[0]+locObj.id+BASE_URL[1]+locObj.week+BASE_URL[2]+locObj.schoolId+BASE_URL[4];
+            return BASE_URL[0]+locObj.id+BASE_URL[1]+locObj.week+BASE_URL[2]+locObj.schoolId+BASE_URL[3];
         else throw new NovaError({errCode:NovaError.prototype.errCodes.MISSING_PARAMETER,msg:'can\'t build URL'});
     };
     
