@@ -133,28 +133,35 @@ var NOVA = function(){
         });
         
         //Make sure only contains two time columns
-        var timeCheck = [];
+        var timeCheck = [],
+            dayData = sortDayData(day.day.str);
         
         var lesson /*= {start:'',stop:'',contains:[]}*/,
-            lessons = new Day(sortDayData(day.day.str));
-        for(var i=0;i<day.children.length;i++){
-            var t = isTime(day.children[i].str);
-            if(t){
-                if(timeCheck.indexOf(day.children[i].transform[4])===-1)timeCheck.push(day.children[i].transform[4]);
-                
-                if(lesson){
-                    var fill = sortLessonData({data:lesson.contains,start:lesson.start,stop:t});
-                    var l = new Lesson(fill);
-                    lessons.appendLesson(l);
-                    lesson = null;
-                }else{
-                    lesson = {start:t/*,stop:null*/,contains:[]}
+            lessons = new Day(dayData);
+        try{
+            for(var i=0;i<day.children.length;i++){
+                var t = isTime(day.children[i].str);
+                if(t){
+                    if(timeCheck.indexOf(day.children[i].transform[4])===-1)timeCheck.push(day.children[i].transform[4]);
+
+                    if(lesson){
+                        var fill = sortLessonData({data:lesson.contains,start:lesson.start,stop:t});
+                        var l = new Lesson(fill);
+                        lessons.appendLesson(l);
+                        lesson = null;
+                    }else{
+                        lesson = {start:t/*,stop:null*/,contains:[]}
+                    }
+                }else if(lesson){
+                    lesson.contains.push(day.children[i].str);
                 }
-            }else if(lesson){
-                lesson.contains.push(day.children[i].str);
             }
-            
-        };
+        }catch(err){
+            //Remove this after sophisticated analyze created
+            console.warn('An error occured when processing day, leaving it empty!');
+            dayData.error = err;
+            return new Day(dayData);
+        }
         //if not two time columns -> throw
         if(timeCheck.length!==2)throw new NovaError({errCode:NovaError.prototype.errCodes.UNEXPECTED_STRUCTURE,msg:'incorect amount of time-columns: '+timeCheck.length, data:'Incomplete Day'});
         return lessons
@@ -552,6 +559,8 @@ var NOVA = function(){
         this.date = obj.date || null,
             this.name = obj.name || null,
             this.lessons = [];
+        if(obj.error)
+            this.error = obj.error;
     };
     Day.prototype.appendLesson = function(lesson){
         if(!lesson)throw new NovaError({errCode:NovaError.prototype.errCodes.MISSING_PARAMETER,msg:'lesson is not defined'});
