@@ -51,9 +51,9 @@ var NOVA = function(){
             }
             
             PDFJS.getDocument(loc).then(function(pdf) {
-                progressFn({step:0,string:PROGRESS_STEPS.getPdf[0]});
+                if(progressFn)progressFn({step:0,string:PROGRESS_STEPS.getPdf[0]});
                 pdf.getPage(1).then(function(page) {
-                    progressFn({step:1,string:PROGRESS_STEPS.getPdf[1]});
+                    if(progressFn)progressFn({step:1,string:PROGRESS_STEPS.getPdf[1]});
                     var viewport;
                     /*scale handler*/
                     if(!scale || !isNaN(parseFloat(scale))){
@@ -73,7 +73,7 @@ var NOVA = function(){
                         }
                     }
                     page.getTextContent().then(function(textContent) {
-                        progressFn({step:2,string:PROGRESS_STEPS.getPdf[2]});
+                        if(progressFn)progressFn({step:2,string:PROGRESS_STEPS.getPdf[2]});
                         resolve({page:page,viewport:viewport,textContent:textContent});
                     },function(err){reject(err)});
                 },function(err){reject(err)});
