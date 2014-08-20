@@ -7,6 +7,7 @@
         <meta charset="utf-8">
         <script src="js/pdfjs/pdf.js"></script>
         <script src="js/NOVAXML.js" type="text/javascript"></script>
+        <script src="js/page.js" type="text/javascript"></script>
     </head>
     <body>
         <header>
@@ -20,14 +21,7 @@
         <main>
             <div class="carry">
                 <div class="center-container">
-                    <form class="center-child" onsubmit='NOVA.startNova()' id="NOVA-input-form">
-                        <input type="text" placeholder="Personnummer" id="NOVA-user-id">
-                        <select id="NOVA-period-list">
-                            <option value="Ht">Höstterminen</option>
-                            <option value="Vt">Vårterminen</option>  
-                        </select>
-                        <input type="button" id="NOVA-submit-btn" value="Generera sig!">
-                    </form>
+                    <form class="center-child" id="NOVA-input-form"></form>
                 </div>
             </div>
 
@@ -37,27 +31,51 @@
             <h2>
                 FAQ:
             </h2>
+
             <h3>
-                Q: Varför frågar ni om personnummer? Jag vill helst inte dela med mig av sånt.
+                Min skola finns inte! Vad ska jag göra? Jag måste ha mitt schema. NU.
             </h3>
             <p>
-                A: För att läsa av schemat behöver vi scheman som inte innehåller överlappande lektioner. Ett exempel på en överlappande lektioner kan vara individuella val, där en hel klass kan ha olika lektioner samtidigt. För att förhindra detta genererar vi ett personligt schema. Om du inte vill skriva in ditt personnummer så behöver du inte, men räkna inte med att få ett xml-schema då.
+                Det är klart alla skolor måste ha tillgång till sitt schema överallt och
+                alltid! Om du inte vet hur GitHub fungerar kan du <a href="mailto:add.school@example.com">skicka oss ett mail</a> med en
+                länk till schemat.
+                <br><br>
+                Om du vill utmana dig lite kan du kolla instruktionerna på vår GitHub-sida
+                och sedan bara göra en PR till vårt projekt.
+            </p>
+            
+            <h3>
+                Varför frågar ni om personnummer? Jag vill helst inte dela med mig av sånt.
+            </h3>
+            <p>
+                För att läsa av schemat behöver vi scheman som inte innehåller överlappande lektioner.
+                Ett exempel på en överlappande lektioner kan vara individuella val, där en hel klass kan
+                ha olika lektioner samtidigt. För att förhindra detta genererar vi ett personligt schema.
+                Om du inte vill skriva in ditt personnummer så behöver du inte, men räkna inte med att få
+                ett xml-schema då.
             </p>
 
             <h3>
-                Q: Sparar ni personnummrerna någonstans, säljer de vidare eller gör något annat ondskefullt?
+                Sparar ni personnummrerna någonstans, säljer de vidare eller gör något annat ondskefullt?
             </h3>
             <p>
-                A: Det enda sättet att verkligen bevisa att att vi inte gör detta är att ta sig en titt i källkoden. 
-                Hela den här sidan är publicerad på github (kolla längst ner på sidan för en länk). 
-                Om du inte kan läsa kod så får du helt enkelt lite på oss när vi säger att vi inte sparar/säljer/gör 
-                ondskefulla saker med det du skriver in. 
-            </p>
-            <p>
-                Vi tycker att vår kod är så bra och godhjärtad att vi vill skryta om den för hela världen. Därför finns allt publicerat på github. 
+                Det enda sättet att verkligen bevisa att att vi inte gör detta är att ta sig en
+                titt i källkoden. Hela den här sidan är publicerad på github (kolla längst ner på
+                sidan för en länk). Om du inte kan läsa kod så får du helt enkelt lite på oss när
+                vi säger att vi inte sparar/säljer/gör ondskefulla saker med det du skriver in.
+                <br></br>
+                Vi tycker att vår kod är så bra och godhjärtad att vi vill skryta om den för hela världen.
+                Därför finns allt publicerat på github. 
             </p>
         </section>
         <footer>
+            <div id="error">
+                <h3>Attans! Vi har ett problem:</h3>
+                <p class="message"></p>
+                <p>
+                    Om du tror att skit bakom spakarna orsakat felet. Vänligen maila ovanstående text till <a href="mailto:our.mail@example.com">our.mail@example.com</a>
+                </p>
+            </div>
             <p>
                 Skript som sidan använder sig av:
             </p>
@@ -68,74 +86,5 @@
                 <li><i><a href="http://www.stevenbonner.com/projects/langdon/">Langdon Font</a></i> utvecklad av Steven Bonner</li>
             </ul>
         </footer>
-
-        <!--script src="js/demo.js" type="text/javascript"></script-->
-        <script type="text/javascript">
-            addForkMe = function(color,pos,size,parent,usrStyle){
-                var gitForkMeMedia = {baseUri:'https://s3.amazonaws.com/github/ribbons/forkme_',
-                                      pos:{right:'right_',left:'left_'},
-                                      color:{white:'white_ffffff.png',
-                                             gray:'gray_6d6d6d.png',
-                                             darkblue:'darkblue_121621.png',
-                                             red:'red_aa0000.png',
-                                             green:'green_007200.png',
-                                             orange:'orange_ff7600.png'},
-                                      link:'https://github.com/akaProxy/NOVAXML.JS',
-                                      randProp: function(obj){
-                                          var result;
-                                          var count = 0;
-                                          for (var prop in obj)
-                                              if (Math.random() < 1/++count)
-                                                  result = prop;
-                                          return result;
-                                      }
-                                     };
-                obj = gitForkMeMedia;
-                if(!parent)
-                    parent=document.body;
-                if(!color || color=='random')
-                    color = gitForkMeMedia.randProp(obj.color);
-                if(pos=='random')
-                    pos = (Math.random()<0.5)?'left':'right';
-                else if(pos!='right')
-                    pos='left';
-                if(!size || size=='default')
-                    size='149px';
-
-                var styles = {backgroundImage:'url("'+obj.baseUri+obj.pos[pos]+obj.color[color]+'")',
-                                backgroundRepeat:'no-repeat',
-                                backgroundSize:'cover',
-                                position:'absolute',
-                                zIndex:'100',
-                                top:'0%',
-                                right:'',
-                                left:'',
-                                width:size,
-                                height:size
-                            };
-
-                if(document.getElementById('ForkUsOnGit'))
-                    gitA=document.getElementById('ForkUsOnGit');
-                else{
-                    var gitA = document.createElement('a'),
-                        href=document.createAttribute("href"),
-                        id=document.createAttribute("id");
-                    href.value=obj.link,
-                        id.value='ForkUsOnGit';
-                    gitA.setAttributeNode(href),
-                        gitA.setAttributeNode(id);
-                }
-
-                for(style in styles)
-                    gitA.style[style] = styles[style];
-                for(style in usrStyle)
-                    gitA.style[style] = usrStyle[style];
-
-                gitA.style[pos] = '0%'
-                parent.appendChild(gitA);
-            };
-            //Add 'fork me' button top right.
-            addForkMe('random','right', 'default', document.querySelector('header'), {'margin-top': '-100px'});
-        </script>
     </body>
 </html>

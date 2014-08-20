@@ -1,7 +1,25 @@
+/*
+ * NOVAXML.js -- analyzing noveschem pdfs through the use of PDF.js and phpProxy
+ *
+ * Copyright (C) 2014 akaProxy
+ *                    Author: Erik Nygren <erik@nygrens.eu>
+ *                            John Daniel Bossér <daniel@bosser.com>
+ *
+ * This file may be used under the terms of the MIT Licence
+ * which can be found in the project root
+ */
+
+
 /*TODO: get by date*/
 var NOVA = function(){
     
-    var PROGRESS_STEPS = {getPdf:['Document Recived',
+    //Every school has a different value. For example, Blackebergs Gymnasium has the id 52550
+    var SCHOOLS = {"Blackebergs Gymnasium": 52550,
+                   "Kungsholmens Gymnasium": 29200,
+                   "Norra Real": 81530,
+                   "Östra Real": 59150
+                  };
+    var PROGRESS_STEPS = {getPdf:['Document Received',
                                   'Page Loaded',
                                   'Done Loading'
                              ],
@@ -9,7 +27,7 @@ var NOVA = function(){
                                    'Week created'
                                   ],
                           combined:['Initiating Week',
-                                    'Week Aplied'
+                                    'Week Applied'
                                    ]
                          };
     var FIRST_WEEK = 1,
@@ -22,6 +40,7 @@ var NOVA = function(){
                        'X-WR-CALNAME:Schema\n'+
                        'X-WR-CALDESC:Skolschema genererat av Novaminers\n',
         ICS_END = 'END:VCALENDAR';
+    var BASE_URL = ['php/phpProxy.php?id=','&week=','&school=',''];
 /****************************************************/
 /******************** Analysis **********************/
 /****************************************************/
@@ -32,11 +51,11 @@ var NOVA = function(){
             }
             
             PDFJS.getDocument(loc).then(function(pdf) {
-                progressFn({step:0,string:PROGRESS_STEPS.getPdf[0]});
+                if(progressFn)progressFn({step:0,string:PROGRESS_STEPS.getPdf[0]});
                 pdf.getPage(1).then(function(page) {
-                    progressFn({step:1,string:PROGRESS_STEPS.getPdf[1]});
+                    if(progressFn)progressFn({step:1,string:PROGRESS_STEPS.getPdf[1]});
                     var viewport;
-                    /*scale handeler*/
+                    /*scale handler*/
                     if(!scale || !isNaN(parseFloat(scale))){
                         viewport = page.getViewport(scale||1);
                     }else if(scale.width || scale.height){
@@ -54,7 +73,7 @@ var NOVA = function(){
                         }
                     }
                     page.getTextContent().then(function(textContent) {
-                        progressFn({step:2,string:PROGRESS_STEPS.getPdf[2]});
+                        if(progressFn)progressFn({step:2,string:PROGRESS_STEPS.getPdf[2]});
                         resolve({page:page,viewport:viewport,textContent:textContent});
                     },function(err){reject(err)});
                 },function(err){reject(err)});
@@ -68,7 +87,7 @@ var NOVA = function(){
     };
     var getNovaUrl = function(locObj){
         if(locObj.schoolId && locObj.id && locObj.week)
-            return 'php/phpProxy.php?id='+locObj.id+'&week='+locObj.week+'&school='+locObj.schoolId;
+            return BASE_URL[0]+locObj.id+BASE_URL[1]+locObj.week+BASE_URL[2]+locObj.schoolId+BASE_URL[3];
         else throw new NovaError({errCode:NovaError.prototype.errCodes.MISSING_PARAMETER,msg:'can\'t build URL'});
     };
     
@@ -114,28 +133,35 @@ var NOVA = function(){
         });
         
         //Make sure only contains two time columns
-        var timeCheck = [];
+        var timeCheck = [],
+            dayData = sortDayData(day.day.str);
         
         var lesson /*= {start:'',stop:'',contains:[]}*/,
-            lessons = new Day(sortDayData(day.day.str));
-        for(var i=0;i<day.children.length;i++){
-            var t = isTime(day.children[i].str);
-            if(t){
-                if(timeCheck.indexOf(day.children[i].transform[4])===-1)timeCheck.push(day.children[i].transform[4]);
-                
-                if(lesson){
-                    var fill = sortLessonData({data:lesson.contains,start:lesson.start,stop:t});
-                    var l = new Lesson(fill);
-                    lessons.appendLesson(l);
-                    lesson = null;
-                }else{
-                    lesson = {start:t/*,stop:null*/,contains:[]}
+            lessons = new Day(dayData);
+        try{
+            for(var i=0;i<day.children.length;i++){
+                var t = isTime(day.children[i].str);
+                if(t){
+                    if(timeCheck.indexOf(day.children[i].transform[4])===-1)timeCheck.push(day.children[i].transform[4]);
+
+                    if(lesson){
+                        var fill = sortLessonData({data:lesson.contains,start:lesson.start,stop:t});
+                        var l = new Lesson(fill);
+                        lessons.appendLesson(l);
+                        lesson = null;
+                    }else{
+                        lesson = {start:t/*,stop:null*/,contains:[]}
+                    }
+                }else if(lesson){
+                    lesson.contains.push(day.children[i].str);
                 }
-            }else if(lesson){
-                lesson.contains.push(day.children[i].str);
             }
-            
-        };
+        }catch(err){
+            //Remove this after sophisticated analyze created
+            console.warn('An error occured when processing day, leaving it empty!');
+            dayData.error = err;
+            return new Day(dayData);
+        }
         //if not two time columns -> throw
         if(timeCheck.length!==2)throw new NovaError({errCode:NovaError.prototype.errCodes.UNEXPECTED_STRUCTURE,msg:'incorect amount of time-columns: '+timeCheck.length, data:'Incomplete Day'});
         return lessons
@@ -327,17 +353,16 @@ var NOVA = function(){
                 else if(urlArr)
                     t.loadWeek({nr:i,pdf:curr,scale:scale,progressFn:progressFn});
                 else{
-                    progressFn({weekNr:curr,stepType:'combined',step:0,string:PROGRESS_STEPS.combined[0]});
+                    if(progressFn)progressFn({weekNr:curr,stepType:'combined',step:0,string:PROGRESS_STEPS.combined[0]});
 
-                    var load = t.loadWeek({nr:curr,id:id,schoolId:schoolId,scale:scale,progressFn:progressFn});
-                    load.then(function(e){
-                        progressFn({weekNr:e,stepType:'combined',step:1,string:PROGRESS_STEPS.combined[1],data:e,succeded:true});
+                    t.loadWeek({nr:curr,id:id,schoolId:schoolId,scale:scale,progressFn:progressFn}).then(function(e){
+                        if(progressFn)progressFn({weekNr:e.weekNr,stepType:'combined',step:1,string:PROGRESS_STEPS.combined[1],data:e,succeded:true});
                         if(--completed<1){
                             if(failed.length>0) reject(failed);
                             else resolve(t);
                         }
                     },function(err){
-                        progressFn({weekNr:curr,stepType:'combined',step:1,string:PROGRESS_STEPS.combined[1],data:err,succeded:false});
+                        if(progressFn)progressFn({weekNr:err.weekNr,stepType:'combined',step:1,string:PROGRESS_STEPS.combined[1],data:err,succeded:false});
                         failed.push(err);
                         if(--completed<1){
                             if(failed.length>0) reject(failed);
@@ -383,16 +408,17 @@ var NOVA = function(){
                 var week;
                 try{
                     var sort = getSortedDays(objs.textContent);
-                    if(progress)progress({weekNr:nr,stepType:'analyse',step:0,string:PROGRESS_STEPS.analyse[0]});
+                    if(progress)progress({weekNr:nr,stepType:'analyse',step:0,string:PROGRESS_STEPS.analyse[0],viewport:objs.viewport,page:objs.page});
                     week = processWeek(sort);
                     week.nr = nr;
                     if(progress)progress({weekNr:nr,stepType:'analyse',step:1,string:PROGRESS_STEPS.analyse[1]});
                     t.appendWeek(week);
-                    resolve({weekNr:nr,week:week,viewport:objs.viewport,page:objs.page,textContent:objs.textContent})
+                    resolve({weekNr:nr,week:week,viewport:objs.viewport,page:objs.page,textContent:objs.textContent});
                 }catch(err){
                     /*Analyzing error and resolve it here*/
                     reject({error:err,weekNr:nr})
                 }
+                 resolve({weekNr:nr,week:week,viewport:objs.viewport,page:objs.page,textContent:objs.textContent});
             },function(err){reject(err)});
         });
         return promise
@@ -443,7 +469,7 @@ var NOVA = function(){
         if(month.length==1)month='0'+month;
         
         if(onlyDate=='year'){
-            if(parseInt(month)<8)
+            if(parseInt(month)<7)
                 return [parseInt(yr),parseInt(yr)-1];
             else
                 return [parseInt(yr)+1,parseInt(yr)];
@@ -533,6 +559,8 @@ var NOVA = function(){
         this.date = obj.date || null,
             this.name = obj.name || null,
             this.lessons = [];
+        if(obj.error)
+            this.error = obj.error;
     };
     Day.prototype.appendLesson = function(lesson){
         if(!lesson)throw new NovaError({errCode:NovaError.prototype.errCodes.MISSING_PARAMETER,msg:'lesson is not defined'});
@@ -619,41 +647,5 @@ var NOVA = function(){
         return ics
     };
     
-    return {Schdule:Schdule}
+    return {SCHOOLS:SCHOOLS, Schdule:Schdule, editConstants: null}
 }();
-
-window.onload = function(){
-    document.getElementById('NOVA-submit-btn').onclick = function(){
-        //Disabled for development
-        //var url = "php/phpProxy.php?id=" + id + "&week=" + week + "&school=" + schoolId;
-        var url = NOVA.getNovaUrl({schoolId:52550,id:document.getElementById('NOVA-user-id').value,week:36});//"Schedule.pdf";
-
-        NOVA.loadPDF(url,{width:window.innerWidth,height:500,renderMode:'contain'}).then(function(objs){
-            var viewport = objs.viewport,
-                page = objs.page,
-                textContent = objs.textContent;
-
-            var container = document.getElementById("pdfContainer");
-
-            var canvas = document.createElement("canvas");
-            var context = canvas.getContext('2d');
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-
-            container.appendChild(canvas);
-
-            var renderContext = {
-                canvasContext: context,
-                viewport: viewport
-            };
-
-            page.render(renderContext);
-            
-            window.h = NOVA.getSortedDays(textContent);
-            console.log(h);
-
-        }).catch(function(err){console.log(err)});
-
-        return false
-    };
-};

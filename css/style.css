@@ -21,7 +21,7 @@ header p {
     margin-top:0;
 }
 main {
-    height: 30em;
+    /*height: 30em;*/
     overflow: hidden;
 }
 main .carry {
@@ -44,7 +44,29 @@ main .center {
     text-align: center;
     margin:auto;
 }
-
+#pdfContainer .pdf-paper{
+    display: inline-block;
+    max-width: 500px;
+    width: 300px;
+    max-height: 250px;
+    height: 200px;
+    background-color: white;
+    border-radius: 1em;
+    overflow: hidden;
+    margin: 2em;
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+#pdfContainer .pdf-paper canvas{
+    height: 100%;
+    float: left;
+}
+#pdfContainer .pdf-paper .progress{
+    text-align: left;
+    display: block;
+    width: 50%;
+    margin-left: 50%;
+}
 
 #faq{
     min-height: 100%;
@@ -69,6 +91,13 @@ main .center {
     max-width: 70%;
 }
 
+#faq h3::before{
+content:"Q: ";
+}
+#faq p::before{
+content:"A: ";
+}
+
 footer {
     background-color: #303030;   
     color: #dbdbdb;
@@ -82,4 +111,17 @@ a {
 }
 a:hover {
 	text-decoration:none;
+}
+#error{
+    display: none;
+    color: #fff;
+    padding: 5px 5em;
+    border-radius: 5em;
+    background-color: orange;
+}
+#error .message{
+    color: #dbdbdb;
+}
+#error a{
+    color: #dfe8f2;
 }
