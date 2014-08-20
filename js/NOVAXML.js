@@ -13,6 +13,10 @@
 /*TODO: get by date*/
 var NOVA = function(){
     
+    /****************************************************/
+    /******************* Constants **********************/
+    /****************************************************/
+    
     //Every school has a different value. For example, Blackebergs Gymnasium has the id 52550
     var SCHOOLS = {"Blackebergs Gymnasium": 52550,
                    "Kungsholmens Gymnasium": 29200,
@@ -41,11 +45,13 @@ var NOVA = function(){
                        'X-WR-CALDESC:Skolschema genererat av Novaminers\n',
         ICS_END = 'END:VCALENDAR';
     var BASE_URL = ['php/phpProxy.php?id=','&week=','&school=',''];
-    var BEGIN_XML = "<novaschedule>";
+    var BEGIN_XML = "<?xml version='1.0' encoding='UTF-8'?><novaschedule>";
     var END_XML = "</novaschedule>";
+    
 /****************************************************/
 /******************** Analysis **********************/
 /****************************************************/
+    
     var loadPDF = function(loc,scale,progressFn) {
         var promise = new Promise(function(resolve,reject){
             if (typeof PDFJS === 'undefined') {
