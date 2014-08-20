@@ -353,16 +353,16 @@ var NOVA = function(){
                 else if(urlArr)
                     t.loadWeek({nr:i,pdf:curr,scale:scale,progressFn:progressFn});
                 else{
-                    progressFn({weekNr:curr,stepType:'combined',step:0,string:PROGRESS_STEPS.combined[0]});
+                    if(progressFn)progressFn({weekNr:curr,stepType:'combined',step:0,string:PROGRESS_STEPS.combined[0]});
 
                     t.loadWeek({nr:curr,id:id,schoolId:schoolId,scale:scale,progressFn:progressFn}).then(function(e){
-                        progressFn({weekNr:e.weekNr,stepType:'combined',step:1,string:PROGRESS_STEPS.combined[1],data:e,succeded:true});
+                        if(progressFn)progressFn({weekNr:e.weekNr,stepType:'combined',step:1,string:PROGRESS_STEPS.combined[1],data:e,succeded:true});
                         if(--completed<1){
                             if(failed.length>0) reject(failed);
                             else resolve(t);
                         }
                     },function(err){
-                        progressFn({weekNr:err.weekNr,stepType:'combined',step:1,string:PROGRESS_STEPS.combined[1],data:err,succeded:false});
+                        if(progressFn)progressFn({weekNr:err.weekNr,stepType:'combined',step:1,string:PROGRESS_STEPS.combined[1],data:err,succeded:false});
                         failed.push(err);
                         if(--completed<1){
                             if(failed.length>0) reject(failed);
@@ -469,7 +469,7 @@ var NOVA = function(){
         if(month.length==1)month='0'+month;
         
         if(onlyDate=='year'){
-            if(parseInt(month)<8)
+            if(parseInt(month)<7)
                 return [parseInt(yr),parseInt(yr)-1];
             else
                 return [parseInt(yr)+1,parseInt(yr)];
