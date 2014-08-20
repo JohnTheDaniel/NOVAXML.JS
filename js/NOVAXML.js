@@ -289,7 +289,7 @@ var NOVA = function(){
     };
     NovaError.prototype.toString = function(){return '[object NovaError]'};
     
-    var Schdule = function(obj){
+    var Schedule = function(obj){
         if(!obj)obj = {};//prevent errors at undefined obj
         this.schoolId = obj.schoolId || null,
             this.id = obj.id || null
@@ -339,7 +339,7 @@ var NOVA = function(){
             }
         }
     };
-    Schdule.prototype.getWeeks = function(obj){
+    Schedule.prototype.getWeeks = function(obj){
         if(obj && obj=='all'){
             obj=[];
             for(var i=0;i<this.weeks.length;i++){
@@ -348,7 +348,7 @@ var NOVA = function(){
         }
         return new WeekBascet(weekDataToArray(obj),this.weeks);
     };
-    Schdule.prototype.loadWeeks = function(obj){
+    Schedule.prototype.loadWeeks = function(obj){
         var id = obj.id,
             schoolId = obj.schoolId,
             scale = obj.scale,
@@ -404,7 +404,7 @@ var NOVA = function(){
         });
         return promise
     };
-    Schdule.prototype.loadWeek = function(obj,progressFn){
+    Schedule.prototype.loadWeek = function(obj,progressFn){
         var nr = parseInt(obj),
             id = this.id,
             schoolId = this.schoolId,
@@ -453,7 +453,7 @@ var NOVA = function(){
         });
         return promise
     };
-    Schdule.prototype.appendWeek = function(week){
+    Schedule.prototype.appendWeek = function(week){
         if(!week)throw new NovaError({errCode:NovaError.prototype.errCodes.MISSING_PARAMETER,msg:'week is not defined'});
         //control Week constructor. Must be Week!
         week.parent = this;
@@ -810,5 +810,5 @@ var NOVA = function(){
         return xml;
     };
     
-    return {SCHOOLS:SCHOOLS, Schdule:Schdule, editConstants: null}
+    return {SCHOOLS:SCHOOLS, Schedule:Schedule, editConstants: null}
 }();
