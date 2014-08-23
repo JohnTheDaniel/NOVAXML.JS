@@ -355,7 +355,7 @@ window.onload = function(){
     schoolList.setup(NOVA.SCHOOLS, document.getElementById("NOVA-input-form"), document.getElementById("NOVA-period-list"));
     
     
-    window.mittSchema = new NOVA.Schdule();
+    window.mittSchema = new NOVA.Schedule();
     var frm = document.getElementById('NOVA-input-form');
     form.create(frm);
     frm.onsubmit = function(){

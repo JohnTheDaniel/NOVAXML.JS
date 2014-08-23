@@ -13,6 +13,10 @@
 /*TODO: get by date*/
 var NOVA = function(){
     
+    /****************************************************/
+    /******************* Constants **********************/
+    /****************************************************/
+    
     //Every school has a different value. For example, Blackebergs Gymnasium has the id 52550
     var SCHOOLS = {"Blackebergs Gymnasium": 52550,
                    "Kungsholmens Gymnasium": 29200,
@@ -41,9 +45,13 @@ var NOVA = function(){
                        'X-WR-CALDESC:Skolschema genererat av Novaminers\n',
         ICS_END = 'END:VCALENDAR';
     var BASE_URL = ['php/phpProxy.php?id=','&week=','&school=',''];
+    var BEGIN_XML = "<?xml version='1.0' encoding='UTF-8'?><novaschedule>";
+    var END_XML = "</novaschedule>";
+    
 /****************************************************/
 /******************** Analysis **********************/
 /****************************************************/
+    
     var loadPDF = function(loc,scale,progressFn) {
         var promise = new Promise(function(resolve,reject){
             if (typeof PDFJS === 'undefined') {
@@ -247,7 +255,17 @@ var NOVA = function(){
         WRONG_TYPE: 3,
         UNEXPECTED_STRUCTURE: 4,
         DENIED_PARAMETER: 5,
-        INVALID_DATA: 6
+        INVALID_DATA: 6,
+        
+        WRONG_PARAMS_WEEKBASCET: 101,       
+        WEEKBASCET_EMPTY: 102,
+        
+        WEEK_NUMBER_MISSING: 201,
+        
+        WEEKDAY_NOT_SPECIFIED: 301,
+        
+        INFINITE_LESSON: 401,
+        COURSE_NOT_SPECIFIED: 402
     };
     NovaError.prototype.errMessages = {
         1: 'Unexpected error',
@@ -255,11 +273,23 @@ var NOVA = function(){
         3: 'Wrong type',
         4: 'Unexpected structure',
         5: 'Denied parameter',
-        6: 'Invalid data'
+        6: 'Invalid data',
+        
+        101: "Wrong params for WeekBascet. Must supply either {start: [integer], end: [integer]} or an array with integers with the desired week numbers, for example [3,5,7] wich returns week 3, week 5 and week 7",
+        
+        102: "WeekBascet is empty. Call NOVA.Schedule.getWeeks(params) to get a filled WeekBascet.",
+        
+        201: "Week number not specified. Pleace provide weekNumber in the param-object: Week({weekNumber:[integer]})",
+        
+        301: "Week day not specified. Pleace provide weekDay in the param-object: Day({weekDay:[integer 0 to 5]})", 
+        
+        401: "Lesson lacks either a start or stop time. Make sure to set Lesson.startTime and Lesson.stopTime.",
+        
+        402: "Lesson lacks a course name. Please provide a param with an object that specifies the course, example Lesson({course:'course name'})"
     };
     NovaError.prototype.toString = function(){return '[object NovaError]'};
     
-    var Schdule = function(obj){
+    var Schedule = function(obj){
         if(!obj)obj = {};//prevent errors at undefined obj
         this.schoolId = obj.schoolId || null,
             this.id = obj.id || null
@@ -309,7 +339,7 @@ var NOVA = function(){
             }
         }
     };
-    Schdule.prototype.getWeeks = function(obj){
+    Schedule.prototype.getWeeks = function(obj){
         if(obj && obj=='all'){
             obj=[];
             for(var i=0;i<this.weeks.length;i++){
@@ -318,7 +348,7 @@ var NOVA = function(){
         }
         return new WeekBascet(weekDataToArray(obj),this.weeks);
     };
-    Schdule.prototype.loadWeeks = function(obj){
+    Schedule.prototype.loadWeeks = function(obj){
         var id = obj.id,
             schoolId = obj.schoolId,
             scale = obj.scale,
@@ -374,7 +404,7 @@ var NOVA = function(){
         });
         return promise
     };
-    Schdule.prototype.loadWeek = function(obj,progressFn){
+    Schedule.prototype.loadWeek = function(obj,progressFn){
         var nr = parseInt(obj),
             id = this.id,
             schoolId = this.schoolId,
@@ -423,7 +453,7 @@ var NOVA = function(){
         });
         return promise
     };
-    Schdule.prototype.appendWeek = function(week){
+    Schedule.prototype.appendWeek = function(week){
         if(!week)throw new NovaError({errCode:NovaError.prototype.errCodes.MISSING_PARAMETER,msg:'week is not defined'});
         //control Week constructor. Must be Week!
         week.parent = this;
@@ -449,16 +479,25 @@ var NOVA = function(){
     };
     WeekBascet.prototype = new Array();
     WeekBascet.prototype.toXML = function(){
-        if(this.length == 0) {throw new NovaError({errCode: NovaError.errCodes.EXAMPLE_ERROR})}
+        if(this.length === 0) {throw new NovaError({errCode: NovaError.errCodes.WEEKBASCET_EMPTY})}
         var xml = "";
         
-        //init xml
-        xml = xml + "<novaschedule>";
+        this.sort(function(a,b){
+            return parseInt(a.weekNumber) - parseInt(b.weekNumber)      
+        });
         
-        //something
+        //init xml
+        xml = xml + BEGIN_XML;
+        
+        //Get xml from weeks.
+        var xmlFromWeeks = "";
+        for(var i = 0; i < this.length; i++){
+            xmlFromWeeks = xmlFromWeeks + this[i].toXML(true);
+        }
+        xml = xml + xmlFromWeeks;
         
         //Stop
-        xml = xml + "</novaschedule>";
+        xml = xml + END_XML;
         
         return xml;
     };
@@ -532,7 +571,40 @@ var NOVA = function(){
         }
         this.days.push(day);
     };
-    Week.prototype.toXML = function(ignoreStart){};
+    Week.prototype.toXML = function(ignoreStart){                  
+        //Sort days, just in case 
+        this.days.sort(function(a,b){
+            var aWeekDay;
+            if(typeof a.nr === 'string') {aWeekDay = parseInt(a.nr)}
+            else {aWeekDay = a.nr}
+            
+            var bWeekDay;
+            if(typeof b.nr === 'string') {bWeekDay = parseInt(b.nr)}
+            else {bWeekDay = b.nr}
+            
+            return aWeekDay - bWeekDay;
+        });
+        
+        //Build xml
+        var xml = "";
+        if(!ignoreStart) xml = xml + BEGIN_XML;
+        
+        //header tag
+        xml = xml + "<week number='" + this.nr + "'>"
+        
+        //Place in all of the days
+        var xmlFromDays = "";
+        for(var i = 0; i < this.days.length; i++){
+            xmlFromDays = xmlFromDays + this.days[i].toXML(true);
+        }
+        xml = xml + xmlFromDays;
+        
+        //Close it all up
+        xml = xml + "</week>"
+        if(!ignoreStart) xml = xml + END_XML;
+        return xml;
+        
+    };
     Week.prototype.toICS = function(ignoreStart,yearOverride,baseId,currentDate){
         var ics = '';
         if(baseId === true)baseId=this.nr;
@@ -558,6 +630,7 @@ var NOVA = function(){
         if(!obj)obj = {};//prevent errors at undefined obj
         this.date = obj.date || null,
             this.name = obj.name || null,
+            this.weekDay = obj.weekDay || null,
             this.lessons = [];
         if(obj.error)
             this.error = obj.error;
@@ -568,7 +641,50 @@ var NOVA = function(){
         lesson.parent = this;
         this.lessons.push(lesson);
     };
-    Day.prototype.toXML = function(ignoreStart){};
+    Day.prototype.toXML = function(ignoreStart){
+                
+        //Sort lessons of the day.
+        this.lessons.sort(function(a,b){
+            var aTimes = a.startTime.split(":");
+            var bTimes = b.startTime.split(":");
+            
+            var aHour = parseInt(aTimes[0]);
+            var aMin = parseInt(aTimes[1]);
+            
+            var bHour = parseInt(bTimes[0]);
+            var bMin = parseInt(bTimes[1]);
+            
+            if(aHour === bHour){
+                return aMin-bMin;
+            } else {
+                return aHour - bHour;
+            }
+        });
+              
+        //Build xml
+        var xml = "";
+        //Begin
+        if(!ignoreStart) xml = xml + BEGIN_XML;
+        
+        //First, top layer tag
+        xml = xml + "<day";
+        xml = xml + " week_day='" + this.weekDay + "'";
+        if(this.date) xml = xml + " date='" + this.date + "'";
+        xml = xml + ">"
+        
+        //Place xml of the lessons in the day
+        var xmlFromLessons = "";
+        for(var i = 0; i < this.lessons.length; i++){
+            xmlFromLessons = xmlFromLessons + this.lessons[i].toXML(true);           
+        }
+        xml = xml + xmlFromLessons;
+        
+        //Close stuff up
+        if(!ignoreStart) xml = xml + END_XML;
+        xml = xml + "</day>"
+        
+        return xml;
+    };
     Day.prototype.toICS = function(ignoreStart,yearOverride,dateOverride,baseId,currentDate){
         var getDate = function(d){
             if(d && d.match(/\d{1,2}\/\d{1,2}/g))
@@ -646,6 +762,53 @@ var NOVA = function(){
         if(!ignoreStart)ics+=ICS_END;
         return ics
     };
+    Lesson.prototype.toXML = function(ignoreStart){
+        var xml = "";
+        //Begin
+        if(!ignoreStart) xml = xml + BEGIN_XML;
+        xml = xml + "<lesson>";
+        
+        //Everything in the middle
+        
+        //Start time
+        if(this.startTime === null) {
+            return;
+        } else {
+            xml = xml + "<start>" + this.startTime + "</start>";   
+        }
+        
+        //Stop time
+        if(this.stopTime === null) {
+            return;
+        } else {
+            xml = xml + "<stop>" + this.stopTime + "</stop>";   
+        }
+        
+        //Course
+        //TODO: do not render incorrectly if course does not exist. Schedule should be able to render without course.
+        //However, a whole day cannot be rendered if a start time does not exist, that is the difference.
+        if(this.course === null){
+            //throw new NovaError({errCode: NovaError.prototype.errCodes.})
+        } else {
+            xml = xml + "<course>" + this.course + "</course>";   
+        }
+        
+        //Teacher
+        xml = xml + "<teacher>";
+        if(this.teacher != null) xml = xml + this.teacher;
+        xml = xml + "</teacher>"
+        
+        //Room
+        xml = xml + "<room>";
+        if(this.room != null) xml = xml + this.room;
+        xml = xml + "</room>"
+        
+        //End
+        xml = xml + "</lesson>";
+        if(!ignoreStart) xml = xml + END_XML;
+        
+        return xml;
+    };
     
-    return {SCHOOLS:SCHOOLS, Schdule:Schdule, editConstants: null}
+    return {SCHOOLS:SCHOOLS, Schedule:Schedule, editConstants: null}
 }();
