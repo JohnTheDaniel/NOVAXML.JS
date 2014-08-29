@@ -42,7 +42,26 @@ var NOVA = function(){
                        'PRODID:-//akaProxy//NOVAMINER public Beta//EN\n'+
                        'VERSION:2.0\n'+
                        'X-WR-CALNAME:Schema\n'+
-                       'X-WR-CALDESC:Skolschema genererat av Novaminers\n',
+                       'X-WR-CALDESC:Skolschema genererat av Novaminers\n' +
+                       'X-WR-TIMEZONE:Europe/Stockholm\n' +
+                       'BEGIN:VTIMEZONE\n' +
+                       'TZID:Europe/Stockholm\n' +
+                       'X-LIC-LOCATION:Europe/Stockholm\n' +
+                       'BEGIN:DAYLIGHT\n' +
+                       'TZOFFSETFROM:+0100\n' +
+                       'TZOFFSETTO:+0200\n' +
+                       'TZNAME:CEST\n' +
+                       'DTSTART:19700329T020000\n' +
+                       'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU\n' +
+                       'END:DAYLIGHT\n' +
+                       'BEGIN:STANDARD\n' +
+                       'TZOFFSETFROM:+0200\n' +
+                       'TZOFFSETTO:+0100\n' +
+                       'TZNAME:CET\n' +
+                       'DTSTART:19701025T030000\n' +
+                       'RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU\n' +
+                       'END:STANDARD\n' +
+                       'END:VTIMEZONE\n',
         ICS_END = 'END:VCALENDAR';
     var BASE_URL = ['php/phpProxy.php?id=','&week=','&school=',''];
     var BEGIN_XML = "<?xml version='1.0' encoding='UTF-8'?><novaschedule>";
@@ -751,8 +770,8 @@ var NOVA = function(){
              'SUMMARY:'+this.course+'\n'+
              'DESCRIPTION:Teacher:'+this.teacher+'\n'+
              'LOCATION:'+this.room+'\n'+
-             'DTSTART:'+f+s[0]+s[1]+'00Z\n'+
-             'DTEND:'+f+e[0]+e[1]+'00Z\n'+
+             'DTSTART:'+f+s[0]+s[1]+'00\n'+
+             'DTEND:'+f+e[0]+e[1]+'00\n'+
              'END:VEVENT\n';
         
         if(!ignoreStart)ics+=ICS_END;
