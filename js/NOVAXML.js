@@ -482,10 +482,6 @@ var NOVA = function(){
         if(this.length === 0) {throw new NovaError({errCode: NovaError.errCodes.WEEKBASCET_EMPTY})}
         var xml = "";
         
-        this.sort(function(a,b){
-            return parseInt(a.weekNumber) - parseInt(b.weekNumber)      
-        });
-        
         //init xml
         xml = xml + BEGIN_XML;
         
