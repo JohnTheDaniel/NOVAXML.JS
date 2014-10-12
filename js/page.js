@@ -98,6 +98,26 @@ var schoolList = function(){
     return {setup:setup,getElement:getElement}
 }();
 
+var typeList = function(){
+    var element;
+    var setup = function(types){
+        element = document.createElement("select");
+        
+        for (var k in types){
+            var option = document.createElement("option");
+            option.textContent = types[k];
+            option.value = k;
+            
+            element.appendChild(option);
+        }
+        return element;
+    }
+    var getElement = function(){
+        return element;
+    };
+    return {setup:setup,getElement:getElement}
+}();
+
 var weekSelect = function(){
     var toggle = {string:'Avancerade alternativ',elmnt:null},
         list = {strings:{HT:'35-51',VT:'2-24'},elmnt:null},
@@ -180,7 +200,7 @@ var weekSelect = function(){
 }();
 
 var form = function(){
-    var inputs = {id:{elmnt:null,string:'Personnummer'},schoolId:null,period:'',submit:'Generera sig!'};
+    var inputs = {id:{elmnt:null,string:'Personnummer'},schoolId:null,period:'',types:null,submit:'Generera sig!'};
     var create = function(parent){
         inputs.id.elmnt = document.createElement('input');
         inputs.id.elmnt.type = 'text';
@@ -196,6 +216,9 @@ var form = function(){
         parent.appendChild(weekSelects[1]);
         parent.appendChild(weekSelects[2]);
         
+        inputs.types = typeList;
+        parent.appendChild(inputs.types.setup(NOVA.TYPES));
+        
         var sbmt = document.createElement('input');
         sbmt.type = 'submit';
         sbmt.value = inputs.submit;
@@ -207,7 +230,11 @@ var form = function(){
     var getData = function(){
         return {id:isIdValid(inputs.id.elmnt.value),schoolId:inputs.schoolId.getElement().value,weeks:inputs.period.getWeeks()}
     };
-    return {create:create,getData:getData}
+    //We want to get selected type separetedly from the rest of the data, because we want to get the type after we have analyzed the weeks. 
+    var getSelectedType = function(){
+        return inputs.types.getElement().value;
+    }
+    return {create:create,getData:getData,getSelectedType:getSelectedType}
 }();
 
 var stringifyJSON = function(obj){
@@ -360,11 +387,23 @@ window.onload = function(){
     form.create(frm);
     frm.onsubmit = function(){
         var objs = form.getData();
-        mittSchema.loadWeeks({progressFn:progressFn,id:objs.id,schoolId:objs.schoolId,weeks:objs.weeks}).then(function(e){
+        mittSchema.loadWeeks({progressFn:progressFn,id:objs.id,schoolId:objs.schoolId,weeks:objs.weeks}).then(function(e){  
+            var type = form.getSelectedType();
+            var filename = "schedule." + type;
             console.info(e);
+            var download = function(filename, text){
+                var pom = document.createElement('a');
+                pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+                pom.setAttribute('download', filename);
+                pom.click();
+            }
+            if (type === "xml"){
+                download(filename, mittSchema.getWeeks("all").toXML())
+            }
         },function(err){
             console.info(err);
         });
+        
         return false
     };
 };

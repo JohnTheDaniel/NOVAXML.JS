@@ -23,6 +23,7 @@ var NOVA = function(){
                    "Norra Real": 81530,
                    "Östra Real": 59150
                   };
+    var TYPES = {xml: "XML (for apps)", ics: "ICS (for calendars)", json: "JSON (coming soon)"};
     var PROGRESS_STEPS = {getPdf:['Document Received',
                                   'Page Loaded',
                                   'Done Loading'
@@ -825,5 +826,5 @@ var NOVA = function(){
         return xml;
     };
     
-    return {SCHOOLS:SCHOOLS, Schedule:Schedule, editConstants: null}
+    return {TYPES:TYPES, SCHOOLS:SCHOOLS, Schedule:Schedule, editConstants: null}
 }();
