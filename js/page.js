@@ -8,6 +8,7 @@
  * This file may be used under the terms of the MIT Licence
  * which can be found in the project root
  */
+var WEEKS_IN_ICS = 5;
 
 var addForkMe = function(color,pos,size,parent,usrStyle){
     var gitForkMeMedia = {baseUri:'https://s3.amazonaws.com/github/ribbons/forkme_',
@@ -389,7 +390,7 @@ window.onload = function(){
         var objs = form.getData();
         mittSchema.loadWeeks({progressFn:progressFn,id:objs.id,schoolId:objs.schoolId,weeks:objs.weeks}).then(function(e){  
             var type = form.getSelectedType();
-            var filename = "schedule." + type;
+            var filename = "schedule";
             console.info(e);
             var download = function(filename, text){
                 var pom = document.createElement('a');
@@ -398,7 +399,20 @@ window.onload = function(){
                 pom.click();
             }
             if (type === "xml"){
-                download(filename, mittSchema.getWeeks("all").toXML())
+                download(filename+"."+type, mittSchema.getWeeks("all").toXML())
+            } else if (type === "ics"){
+                var length = mittSchema.getWeeks("all").length;
+                var files = mittSchema.getWeeks("all").toICS(WEEKS_IN_ICS);
+                
+                if(length <= WEEKS_IN_ICS){
+                    //Only one file
+                    download(filename+"."+type, files);
+                } else {
+                    alert("Du kommer få ladda ner flera filer. Tryck 'tillåt' eller 'allow' i den översta oranga raden i chrome om den dyker upp.\nMånga kalender-program fixar inte allt för stora .ics-filer, därför gör vi det här :)");
+                    for(var i = 0; i < files.length; i++){
+                    download(filename+(i+1)+ "." + type, files[i]);
+                    }
+                }
             }
         },function(err){
             console.info(err);
